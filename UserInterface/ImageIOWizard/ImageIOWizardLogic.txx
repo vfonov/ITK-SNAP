@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: ImageIOWizardLogic.txx,v $
   Language:  C++
-  Date:      $Date: 2008/04/15 21:42:30 $
-  Version:   $Revision: 1.5 $
+  Date:      $Date: 2008/07/03 20:31:10 $
+  Version:   $Revision: 1.5.2.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -118,6 +118,8 @@ ImageIOWizardLogic<TPixel>
 
   // Initialize the callback pointer
   m_Callback = NULL;
+  m_AllowMergeSegmentation = false;
+  m_ShouldMerge = false;
 }
 
 template <class TPixel>
@@ -339,7 +341,7 @@ bool ImageIOWizardLogic<TPixel>
 ::CanSaveFileFormat(FileFormat format) const 
 { 
   return (
-    format != GuidedImageIOBase::FORMAT_DICOM &&
+    /*format != GuidedImageIOBase::FORMAT_DICOM &&*/ //We can now save dicom images
     format != GuidedImageIOBase::FORMAT_GE4 &&
     format != GuidedImageIOBase::FORMAT_GE5 &&
     format != GuidedImageIOBase::FORMAT_SIEMENS);
@@ -1261,9 +1263,22 @@ ImageIOWizardLogic<TPixel>
   if(file)
     m_InFilePageBrowser->value(file);
   OnSaveFilePageFileInputChange();
-
+  
   // Show the input window
   m_WinOutput->show();
+  
+  // If we allow merging segmentation, show segmentation merge option
+  //We do this after showing the window as per the recommendation here
+  //http://www.fltk.org/doc-1.1/Fl_Widget.html#Fl_Widget.hide
+  if(m_AllowMergeSegmentation)
+    m_MergeSegmentationCheckbox->show();
+  else
+  	m_MergeSegmentationCheckbox->hide();
+  	
+  SetupSavePageForMergingIfNecessary();
+  
+  //Make sure we're showing the first page of the wizard
+  m_WizOutput->value(m_PageSaveFile);
 
   // Loop until the window has been closed
   while (m_WinOutput->visible())
@@ -1310,7 +1325,24 @@ ImageIOWizardLogic<TPixel>
     OnSaveFilePageFileFormatChange();
     } 
   else
-    { m_BtnSaveFilePageNext->deactivate(); }            
+    { UpdateNextStepButtons(false); }            
+}
+
+template <class TPixel>
+void 
+ImageIOWizardLogic<TPixel>
+::UpdateNextStepButtons(bool activate)
+{
+	if (activate)
+	{
+		m_BtnSaveFilePageNext->activate();
+		m_BtnSaveFilePageMerge->activate();
+	}
+	else
+	{
+		m_BtnSaveFilePageNext->deactivate();
+		m_BtnSaveFilePageMerge->deactivate();
+	}
 }
 
 template <class TPixel>
@@ -1333,9 +1365,9 @@ ImageIOWizardLogic<TPixel>
 {
   // Activate the next button if there is a format selected
   if(m_InSaveFilePageFormat->value() > 0)
-    m_BtnSaveFilePageNext->activate();
+    UpdateNextStepButtons(true);
   else 
-    m_BtnSaveFilePageNext->deactivate();
+    UpdateNextStepButtons(false);
 }
 
 template <class TPixel>
@@ -1449,6 +1481,83 @@ ImageIOWizardLogic<TPixel>
     m_InFilePageHistory->deactivate();
     m_InSaveFilePageHistory->deactivate();
     }
+}
+
+template <class TPixel>
+void 
+ImageIOWizardLogic<TPixel>
+::OnSaveFilePageNext() 
+{
+	//Sanity check, should hvae to be true but make sure
+	if (!m_AllowMergeSegmentation || !m_ShouldMerge)
+		std::cout << "Somehow OnSaveFilePageNext() was called without merge flags set; problem!" << std::endl;
+	
+	m_WizOutput->value(m_PageMergeSegmentation);
+}
+
+template <class TPixel>
+void 
+ImageIOWizardLogic<TPixel>
+::OnMergePageBack()
+{
+	m_WizOutput->value(m_PageSaveFile);
+}
+
+template <class TPixel>
+void 
+ImageIOWizardLogic<TPixel>
+::OnMergePageSave()
+{
+	//This has to be done in a subclass because some subclasses like RGB aren't comparable with
+	//std::less, so all that code can't live here.
+	this->DoMerge();
+}
+
+template <class TPixel>
+void 
+ImageIOWizardLogic<TPixel>
+::OnMergePageCancel()
+{
+	this->OnSaveCancel();
+}
+
+template <class TPixel>
+void
+ImageIOWizardLogic<TPixel>
+::SetupSavePageForMergingIfNecessary()
+{
+  //Change the save button to a 'Next...' button if
+  // 1. We allow merging (check class member variable)
+  // 2. The merge checkbox is checked
+  
+  bool setupForMerge = false;
+  
+  if (m_AllowMergeSegmentation)
+    {
+    setupForMerge = (m_MergeSegmentationCheckbox->value() == 1);
+    }
+  
+  if (setupForMerge)
+  {
+  	//Change save button 
+    m_BtnSaveFilePageNext->hide();
+    m_BtnSaveFilePageMerge->show();
+    m_ShouldMerge = true;
+  }
+  else
+  {
+  	m_BtnSaveFilePageMerge->hide();
+	m_BtnSaveFilePageNext->show();
+  	m_ShouldMerge = false;
+  }
+}
+  
+template <class TPixel>
+void
+ImageIOWizardLogic<TPixel>
+::OnSaveFilePageMergeSegmentationChange()
+{
+  SetupSavePageForMergingIfNecessary();
 }
 
 

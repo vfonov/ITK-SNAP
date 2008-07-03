@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: GlobalState.h,v $
   Language:  C++
-  Date:      $Date: 2008/03/25 19:31:31 $
-  Version:   $Revision: 1.8 $
+  Date:      $Date: 2008/07/03 20:31:09 $
+  Version:   $Revision: 1.8.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -50,6 +50,7 @@
 #include "SnakeParameters.h"
 #include "ThresholdSettings.h"
 #include "SNAPSegmentationROISettings.h"
+#include "BoundaryLayerSettings.h"
 #include "itkImageRegion.h"
 
 enum ToolbarModeType 
@@ -58,7 +59,8 @@ enum ToolbarModeType
   NAVIGATION_MODE,
   CROSSHAIRS_MODE,
   PAINTBRUSH_MODE,
-  ROI_MODE
+  ROI_MODE,
+  FILL_MODE
 };
 
 enum ToolbarMode3DType
@@ -331,6 +333,12 @@ public:
 
   /** Set the current parameters of the snake algorithm */
   irisSetMacro(SnakeParameters,SnakeParameters);
+  
+  /** Get the current settings for the boundary layer */
+  irisGetMacro(BoundaryLayerSettings,BoundaryLayerSettings);
+  
+  /** Set the current settings for the boundary layer */
+  irisSetMacro(BoundaryLayerSettings,BoundaryLayerSettings);
 
   /** Get the current mesh rendering options */
   irisGetMacro(MeshOptions,MeshOptions);
@@ -414,6 +422,11 @@ public:
 
   /** Set the array of bubbles */
   irisSetMacro(BubbleArray, BubbleArray);
+  
+  irisSetMacro(BoundaryColorLabel, unsigned char);
+  irisSetMacro(BoundaryPresent, bool);
+  irisGetMacro(BoundaryColorLabel, unsigned char);
+  irisIsMacro(BoundaryPresent);
 
   /** 
    * Get the active bubble number. This can be -1 indicating that there is no
@@ -450,6 +463,12 @@ private:
 
   /** Color label over which we can draw */
   unsigned char m_OverWriteColorLabel;
+  
+  /** Boundary label to define 'do not cross' lines for segmentation */
+  unsigned char m_BoundaryColorLabel;
+  
+  /** Whether we have defined a boundary label */
+  bool m_BoundaryPresent;
 
   /** Whether the grey image display uses linear interpolation */
   bool m_InterpolateGrey;
@@ -528,6 +547,9 @@ private:
 
   // Current settings for threshold preprocessing
   EdgePreprocessingSettings m_EdgePreprocessingSettings;
+  
+  // Current settings for boundary layer processing
+  BoundaryLayerSettings		m_BoundaryLayerSettings;
 
   // Current mesh options
   MeshOptions m_MeshOptions;
@@ -574,6 +596,9 @@ private:
 
 /*
  *$Log: GlobalState.h,v $
+ *Revision 1.8.4.1  2008/07/03 20:31:09  timburke1661
+ *Adding Label Merging, Boundary Definition, Greysale Image Saving, Segmentation Flattening, and Hole Filling
+ *
  *Revision 1.8  2008/03/25 19:31:31  pyushkevich
  *Bug fixes for release 1.6.0
  *

@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: ImageIOWizardLogic.h,v $
   Language:  C++
-  Date:      $Date: 2007/12/30 04:05:16 $
-  Version:   $Revision: 1.2 $
+  Date:      $Date: 2008/07/03 20:31:10 $
+  Version:   $Revision: 1.2.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -43,6 +43,7 @@
 
 #include <assert.h>
 #include <string>
+#include <map>
 #include <vector>
 
 #include "ImageIOWizard.h"
@@ -50,12 +51,17 @@
 #include "itkSmartPointer.h"
 #include "ImageCoordinateGeometry.h"
 #include "Registry.h"
+#include "FlattenSegmentationManager.h"
+#include "LabelImageWrapper.h"
 #include <string>
 #include <vector>
+#include <list>
 
 #include "GuidedImageIO.h"
 
 class Fl_Text_Buffer;
+class IRISApplication;
+
 namespace itk 
 {
   template <class TPixel,unsigned int VDimensions> class Image;
@@ -147,9 +153,26 @@ public:
   virtual void OnSaveFilePageBrowse();
   virtual void OnSaveFilePageSave();
   virtual void OnSaveCancel();
+  
+  //Segmentation Merging actions
+  virtual void OnSaveFilePageMergeSegmentationChange();
+  virtual void OnSaveFilePageNext();
+  virtual void OnMergePageBack();
+  virtual void OnMergePageSave();
+  virtual void OnMergePageCancel();
+  
+  virtual void DoMerge() {};
+  virtual void SetLabels(std::list<std::pair<std::string, LabelType> >) {};
+
 
   // Custom initialization code
   virtual void MakeWindow();
+
+  /*
+   * Based on the value of the segmentation merging box, change the save button to a next button
+   */
+  void SetupSavePageForMergingIfNecessary();
+
 
   /**
    * Get the image that has been loaded by this object
@@ -177,6 +200,11 @@ public:
   bool IsImageLoaded() 
   {
     return m_ImageLoaded;
+  }
+  
+  void SetSegmentation(itk::Image<LabelType, 3> *image)
+  {
+  	m_Segmentation = image;
   }
 
   /**
@@ -227,9 +255,14 @@ public:
     { this->m_Callback = iCallback; }
 
 protected:
-
+  /** If we should allow merging segmentation into image (only makes sense for grayscale images) */
+  bool m_AllowMergeSegmentation;
+  bool m_ShouldMerge;
+  
   /** An image being loaded */
   ImagePointer m_Image;
+  
+  itk::Image<LabelType, 3>::Pointer m_Segmentation;
 
   /** The image IO mechanism */
   ImageIOPointer m_ImageIO;
@@ -332,6 +365,8 @@ protected:
   
   // Set the state reflecting an invalid RAI
   void SetRAIToInvalid(const char *);
+  
+  void UpdateNextStepButtons(bool activate);
 };
 
 // TXX not included on purpose!

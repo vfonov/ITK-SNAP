@@ -1,5 +1,5 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0108 
+version 1.0300 
 header_name {.h} 
 code_name {.cxx}
 decl {\#include <stdio.h>} {public
@@ -38,7 +38,7 @@ class UserInterface {open : {public UserInterfaceBase}
     Fl_Window m_WinMain {
       label {ITK-SNAP Main Window}
       callback {OnMainWindowCloseAction();} open
-      xywh {695 221 875 710} type Double align 0 resizable
+      xywh {490 132 875 710} type Double align 0 resizable
       code0 {\#include "UserInterfaceBase.h"} visible
     } {
       Fl_Menu_Bar m_MenubarMain {open
@@ -107,6 +107,11 @@ class UserInterface {open : {public UserInterfaceBase}
               callback {this->OnMenuSavePreprocessed();}
               xywh {40 40 100 20} shortcut 0x50070 labelsize 12 deactivate
             }
+            MenuItem m_MenuSaveGrey {
+              label {Greyscale Image...}
+              callback {OnSaveGreyscaleImage()}
+              xywh {0 0 30 20} labelsize 12 deactivate
+            }
             MenuItem m_MenuSaveGreyROI {
               label {&Greyscale Image Region...}
               callback {this->OnMenuSaveGreyROI();}
@@ -128,7 +133,7 @@ class UserInterface {open : {public UserInterfaceBase}
               xywh {10 10 100 20} shortcut 0x50076 labelsize 12 deactivate divider
             }
             Submenu m_MenuSaveScreenshot {
-              label {Screenshot} open
+              label Screenshot open
               xywh {10 10 100 20} labelsize 12 deactivate
             } {
               MenuItem m_MenuSaveScreenshotAxial {
@@ -255,8 +260,18 @@ class UserInterface {open : {public UserInterfaceBase}
           }
           MenuItem m_MenuRGBOverlayOptions {
             label {Adjust RGB Overlay...}
-            callback {OnMenuShowRGBOverlayOptions()} selected
+            callback {OnMenuShowRGBOverlayOptions()}
             tooltip {Adjust the opacity of the RGB image} xywh {0 0 31 20} labelsize 12 deactivate
+          }
+          MenuItem m_MenuBoundaryLayerOptions {
+            label {Define &Boundary Layer...}
+            callback {OnEditBoundaryLayers()}
+            xywh {0 0 30 20} labelsize 12
+          }
+          MenuItem m_MenuMergeLabels {
+            label {&Merge Labels...}
+            callback {OnMergeLabels()}
+            xywh {0 0 30 20} labelsize 12
           }
         }
         Submenu {} {
@@ -280,7 +295,7 @@ class UserInterface {open : {public UserInterfaceBase}
           }
         }
       }
-      Fl_Group Controls {open
+      Fl_Group Controls {
         xywh {0 24 145 686} box BORDER_FRAME color 0
       } {
         Fl_Wizard m_WizControlPane {
@@ -315,7 +330,8 @@ class UserInterface {open : {public UserInterfaceBase}
                 tooltip {Paintbrush tool} image {Artwork/paintbrush.gif} xywh {55 95 35 35} type Radio box PLASTIC_UP_BOX down_box PLASTIC_UP_BOX shortcut 0x35 color 180 selection_color 180 labelfont 1 labelsize 20 align 16 when 1
               }
               Fl_Button {} {
-                tooltip {3D paint: spray paint and cut planes} xywh {95 95 35 35} box PLASTIC_UP_BOX down_box PLASTIC_UP_BOX shortcut 0x35 color 22 selection_color 22 align 16 when 0 hide deactivate
+                callback {SetToolbarMode(FILL_MODE);}
+                tooltip {Paintbucket: Run an iterative algorithm to fill holes.} image {Artwork/fill.gif} xywh {95 95 35 35} box PLASTIC_UP_BOX down_box PLASTIC_UP_BOX shortcut 0x35 color 180 selection_color 180 align 16 when 1
               }
             }
             Fl_Group {} {
@@ -323,7 +339,7 @@ class UserInterface {open : {public UserInterfaceBase}
               xywh {5 164 135 137} box PLASTIC_UP_BOX color 22 labeltype EMBOSSED_LABEL labelsize 12 labelcolor 4
             } {
               Fl_Wizard m_TabsToolOptions {
-                label {Active Tool Settings}
+                label {Active Tool Settings} open
                 xywh {5 165 135 136} box NO_BOX color 22 labeltype NO_LABEL labelsize 12 labelcolor 4
               } {
                 Fl_Group m_GrpToolOptionCrosshairs {
@@ -480,6 +496,28 @@ class UserInterface {open : {public UserInterfaceBase}
                     tooltip {Enable to make the brush three-dimensional, so it paints in all three views at once} xywh {10 255 64 15} down_box DOWN_BOX labelsize 11
                   }
                 }
+                Fl_Group m_GrpToolOptionFill {
+                  label 7 open
+                  xywh {5 165 135 135} align 4 hide
+                } {
+                  Fl_Group {} {
+                    label {Hole Filling} open
+                    xywh {10 170 125 25} box PLASTIC_DOWN_BOX color 128 labelsize 12 align 16
+                  } {}
+                  Fl_Button {} {
+                    label Run
+                    callback {OnFillHoles()}
+                    xywh {80 270 42 20} box PLASTIC_UP_BOX color 180 labelsize 12
+                  }
+                  Fl_Value_Input m_FillIterations {
+                    label Iterations
+                    xywh {85 201 25 24} labelsize 12 textfont 4 textsize 12
+                  }
+                  Fl_Value_Input m_FillRadius {
+                    label Radius
+                    xywh {74 229 25 26} labelsize 12 textfont 4 textsize 12
+                  }
+                }
               }
             }
             Fl_Group {} {
@@ -542,7 +580,7 @@ OnDrawOverLabelUpdate();} open
               }
             }
             Fl_Group {} {
-              label {3D Toolbox}
+              label {3D Toolbox} open
               xywh {5 590 135 95} box PLASTIC_UP_BOX color 22 labeltype EMBOSSED_LABEL labelsize 12 labelcolor 4
             } {
               Fl_Button {} {
@@ -899,10 +937,10 @@ this->OnSNAPLabelOpacityChange();}
         } {}
       }
       Fl_Group m_GrpRightPane {open
-        xywh {145 0 730 710} box FLAT_BOX color 166 resizable
+        xywh {145 0 730 712} box FLAT_BOX color 166 resizable
       } {
         Fl_Group {m_GrpSlicePanel[0]} {
-          label {m_GrpIRISSlicePanel[0]}
+          label {m_GrpIRISSlicePanel[0]} open
           xywh {145 0 365 355} box UP_BOX
         } {
           Fl_Box {m_SliceWindow[0]} {
@@ -912,42 +950,42 @@ this->OnSNAPLabelOpacityChange();}
             class FLTKCanvas
           }
           Fl_Group {} {open
-            xywh {145 325 365 30} color 48
+            xywh {145 324 365 27} color 48
           } {
             Fl_Button {m_BtnResetView[0]} {
               label {reset view}
               callback {this->OnResetView2DAction(0);}
-              tooltip {Restore the view to default zoom level} xywh {370 330 60 20} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX color 180 selection_color 94 labelsize 10 align 146
+              tooltip {Restore the view to default zoom level} xywh {370 330 60 21} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX color 180 selection_color 94 labelsize 10 align 146
             }
             Fl_Output {m_OutSliceIndex[0]} {
-              xywh {435 330 70 20} box FLAT_BOX color 49 align 0 textsize 10 deactivate
+              xywh {435 329 70 22} box FLAT_BOX color 49 align 0 textsize 10 deactivate
             }
             Fl_Group {m_GrpPolygonEdit[0]} {
-              xywh {150 325 208 30} hide
+              xywh {150 324 208 5} hide
             } {
               Fl_Button {m_BtnPolygonAccept[0]} {
                 label accept
                 callback {OnAcceptPolygonAction(0);}
-                tooltip {Fill in the polygon using the currently selected label} xywh {183 330 40 20} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX color 180 selection_color 94 labelsize 10 align 18
+                tooltip {Fill in the polygon using the currently selected label} xywh {183 324 40 5} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX color 180 selection_color 94 labelsize 10 align 18
               }
               Fl_Button {m_BtnPolygonPaste[0]} {
                 label paste
                 callback {OnPastePolygonAction(0);}
-                tooltip {Paste the previously used polygon into the window} xywh {318 330 40 20} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX color 180 selection_color 94 labelsize 10 align 18
+                tooltip {Paste the previously used polygon into the window} xywh {318 324 40 5} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX color 180 selection_color 94 labelsize 10 align 18
               }
               Fl_Button {m_BtnPolygonInsert[0]} {
                 label insert
                 callback {OnInsertIntoPolygonSelectedAction(0);}
-                tooltip {Insert a new vertex between pairs of selected vertices} xywh {228 330 40 20} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX color 180 selection_color 94 labelsize 10 align 18
+                tooltip {Insert a new vertex between pairs of selected vertices} xywh {228 324 40 5} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX color 180 selection_color 94 labelsize 10 align 18
               }
               Fl_Button {m_BtnPolygonDelete[0]} {
                 label delete
                 callback {OnDeletePolygonSelectedAction(0);}
-                tooltip {Delete the selected vertices} xywh {273 330 40 20} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX color 180 selection_color 94 labelsize 10 align 18
+                tooltip {Delete the selected vertices} xywh {273 324 40 5} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX color 180 selection_color 94 labelsize 10 align 18
               }
             }
             Fl_Group {} {
-              xywh {145 325 5 30} color 154 resizable
+              xywh {145 324 5 5} color 154 resizable
             } {}
           }
           Fl_Group {} {
@@ -1130,7 +1168,7 @@ this->OnSNAPLabelOpacityChange();}
             }
           }
         }
-        Fl_Group m_GrpView3D {open
+        Fl_Group m_GrpView3D {open selected
           xywh {145 355 365 355} box UP_BOX
         } {
           Fl_Box m_RenderWindow {
@@ -1139,7 +1177,7 @@ this->OnSNAPLabelOpacityChange();}
             class FLTKCanvas
           }
           Fl_Group {} {open
-            xywh {145 680 365 30} color 214
+            xywh {145 680 365 32} color 214
           } {
             Fl_Pack m_ToolbarRenderWindow {open
               xywh {385 685 118 20} type HORIZONTAL color 80
@@ -1160,10 +1198,10 @@ this->OnSNAPLabelOpacityChange();}
               }
             }
             Fl_Wizard m_WizRenderingToolbar {open
-              xywh {150 680 235 30} box NO_BOX
+              xywh {145 680 240 32} box NO_BOX
             } {
               Fl_Group m_GrpRenderingIRISPage {open
-                xywh {150 680 235 30}
+                xywh {145 680 240 30}
               } {
                 Fl_Button m_BtnMeshUpdate {
                   label {update mesh}
@@ -1177,15 +1215,15 @@ this->OnSNAPLabelOpacityChange();}
                 }
               }
               Fl_Group m_GrpRenderingSNAPPage {open
-                xywh {150 680 235 30} hide
+                xywh {150 680 235 32} hide
               } {
                 Fl_Button m_BtnSNAPCrosshairsMode3D {
                   callback {SetToolbarMode3D(CROSSHAIRS_3D_MODE);}
-                  tooltip {3D crosshair tool: click on the segmentation to move cursor} image {Artwork/crosshair3Dtiny.gif} xywh {155 682 25 25} type Radio box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX shortcut 0x63 color 180 selection_color 180 align 16
+                  tooltip {3D crosshair tool: click on the segmentation to move cursor} image {Artwork/crosshair3Dtiny.gif} xywh {155 685 25 20} type Radio box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX shortcut 0x63 color 180 selection_color 180 align 16
                 }
                 Fl_Button m_BtnSNAPTrackballMode3D {
                   callback {SetToolbarMode3D(TRACKBALL_MODE);}
-                  tooltip {3D trackball tool: rotate, zoom and pan 3D view} image {Artwork/rotate3dTiny.gif} xywh {185 682 25 25} type Radio box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX shortcut 0x63 value 1 color 180 selection_color 180 align 16
+                  tooltip {3D trackball tool: rotate, zoom and pan 3D view} image {Artwork/rotate3dTiny.gif} xywh {185 685 25 20} type Radio box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX shortcut 0x63 value 1 color 180 selection_color 180 align 16
                 }
                 Fl_Button m_BtnSNAPMeshUpdate {
                   label {update mesh}

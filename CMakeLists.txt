@@ -76,6 +76,7 @@ SET(LOGIC_CXX
   Logic/Mesh/VTKMeshPipeline.cxx
   Logic/Preprocessing/EdgePreprocessingSettings.cxx
   Logic/Preprocessing/ThresholdSettings.cxx
+  Logic/Preprocessing/BoundaryLayerSettings.cxx
   Logic/Slicing/IntensityCurveVTK.cxx
 )
 
@@ -147,12 +148,16 @@ SET(LOGIC_HEADERS
   Logic/Preprocessing/SmoothBinaryThresholdImageFilter.h
   Logic/Preprocessing/SmoothBinaryThresholdImageFilter.txx
   Logic/Preprocessing/ThresholdSettings.h
+  Logic/Preprocessing/BoundaryLayerSettings.h
   Logic/Slicing/IntensityCurveInterface.h
   Logic/Slicing/IntensityCurveVTK.h
   Logic/Slicing/IRISSlicer.h
   Logic/Slicing/IRISSlicer.txx
   Logic/Slicing/UnaryFunctorCache.h
   Logic/Slicing/UnaryFunctorCache.txx
+  Logic/Processing/FlattenSegmentationFunctor.h
+  Logic/Processing/FlattenSegmentationManager.h
+  Logic/Processing/FlattenSegmentationManager.txx
 )
 
 # These files contain the user interface source code
@@ -182,6 +187,8 @@ SET(UI_CXX
   UserInterface/MainComponents/SimpleFileDialogLogic.cxx
   UserInterface/MainComponents/SnakeParametersUILogic.cxx
   UserInterface/MainComponents/UserInterfaceLogic.cxx
+  UserInterface/MainComponents/BoundaryEditorUILogic.cxx
+  UserInterface/MainComponents/MergeLabelsUILogic.cxx
   UserInterface/MeshIOWizard/MeshIOWizardUILogic.cxx
   UserInterface/SliceWindow/BubblesInteractionMode.cxx
   UserInterface/SliceWindow/CrosshairsInteractionMode.cxx
@@ -221,6 +228,8 @@ SET(UI_HEADERS
   UserInterface/ImageIOWizard/RestrictedImageIOWizardLogic.h
   UserInterface/ImageIOWizard/RestrictedImageIOWizardLogic.txx
   UserInterface/ImageIOWizard/SegmentationImageIOWizardLogic.h
+  UserInterface/ImageIOWizard/MergableImageIOWizardLogic.h
+  UserInterface/ImageIOWizard/MergableImageIOWizardLogic.txx
   UserInterface/MainComponents/AppearanceDialogUIBase.h
   UserInterface/MainComponents/AppearanceDialogUILogic.h
   UserInterface/MainComponents/HelpViewerBase.h
@@ -244,6 +253,10 @@ SET(UI_HEADERS
   UserInterface/MainComponents/SimpleFileDialogLogic.h
   UserInterface/MainComponents/UserInterfaceBase.h
   UserInterface/MainComponents/UserInterfaceLogic.h
+  UserInterface/MainComponents/BoundaryEditorUIBase.h
+  UserInterface/MainComponents/BoundaryEditorUILogic.h
+  UserInterface/MainComponents/MergeLabelsUIBase.h
+  UserInterface/MainComponents/MergeLabelsUILogic.h
   UserInterface/MeshIOWizard/MeshExportSettings.h
   UserInterface/MeshIOWizard/MeshIOWizardUIBase.h
   UserInterface/MeshIOWizard/MeshIOWizardUILogic.h
@@ -302,6 +315,8 @@ SET(APPLICATION_FLUIDS
   UserInterface/MainComponents/SimpleFileDialog.fl
   UserInterface/MainComponents/SnakeParametersUI.fl
   UserInterface/MainComponents/UserInterface.fl
+  UserInterface/MainComponents/BoundaryEditorUI.fl
+  UserInterface/MainComponents/MergeLabelsUI.fl
 )
 
 
@@ -368,6 +383,7 @@ ELSE( CMAKE_GENERATOR MATCHES "Visual Studio 6" )
     ${SNAP_SOURCE_DIR}/Logic/LevelSet
     ${SNAP_SOURCE_DIR}/Logic/Mesh
     ${SNAP_SOURCE_DIR}/Logic/Preprocessing
+    ${SNAP_SOURCE_DIR}/Logic/Processing
     ${SNAP_SOURCE_DIR}/Logic/Slicing
     ${SNAP_SOURCE_DIR}/Testing
     ${SNAP_SOURCE_DIR}/UserInterface/BasicComponents

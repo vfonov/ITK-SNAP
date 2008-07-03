@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: IRISApplication.h,v $
   Language:  C++
-  Date:      $Date: 2008/03/25 19:31:31 $
-  Version:   $Revision: 1.7 $
+  Date:      $Date: 2008/07/03 20:31:09 $
+  Version:   $Revision: 1.7.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -41,6 +41,7 @@
 #include "itkCommand.h"
 #include "SystemInterface.h"
 #include "UndoDataManager.h"
+#include "LabelImageWrapper.h"
 
 // #include "itkImage.h"
 
@@ -283,6 +284,11 @@ public:
 
   /** Redo (undo the undo) */
   void Redo();
+  
+  void FillHoles(size_t radius, size_t iterations, CommandType *progressCommand);
+  
+  LabelType GetFirstValidLabel(void);
+  LabelImageWrapper::ConstIterator GetSegmentationImageConstIterator(void);
 
 private:
   // Image data objects

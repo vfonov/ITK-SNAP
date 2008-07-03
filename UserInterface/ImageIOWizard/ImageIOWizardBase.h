@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: ImageIOWizardBase.h,v $
   Language:  C++
-  Date:      $Date: 2007/12/30 04:05:16 $
-  Version:   $Revision: 1.2 $
+  Date:      $Date: 2008/07/03 20:31:10 $
+  Version:   $Revision: 1.2.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -40,6 +40,7 @@
  * The base class for the Image IO Wizard window.  This class declares 
  * callback functions and the child of ImageIOWizard implements them
  */
+  
 class ImageIOWizardBase {
 public:
     virtual ~ImageIOWizardBase() {}
@@ -69,6 +70,20 @@ public:
   virtual void OnSaveFilePageBrowse() = 0;
   virtual void OnSaveFilePageSave() = 0;
   virtual void OnSaveCancel() = 0;
+  
+  //Segmentation Merging functions
+  virtual void OnSaveFilePageMergeSegmentationChange() = 0;
+  virtual void OnSaveFilePageNext() = 0;
+  virtual void OnMergePageBack() = 0;
+  virtual void OnMergePageSave() = 0;
+  virtual void OnMergePageCancel() = 0;
+  
+  //Callbacks that need to be handled by MergableImageIOWizard
+  virtual void OnMergePageApplyLabel() {};
+  virtual void OnUnassignedLabelsChanged() {};
+  virtual void OnAssignedLabelsChanged() {};
+  virtual void OnAssignLabel() {};
+  virtual void OnUnassignLabel() {};
 };
 
 #endif

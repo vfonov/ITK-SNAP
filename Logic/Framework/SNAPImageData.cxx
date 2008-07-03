@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: SNAPImageData.cxx,v $
   Language:  C++
-  Date:      $Date: 2007/12/30 04:05:13 $
-  Version:   $Revision: 1.3 $
+  Date:      $Date: 2008/07/03 20:31:09 $
+  Version:   $Revision: 1.3.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -158,6 +158,44 @@ SNAPImageData
   
   // Dismantle this pipeline
   m_SpeedWrapper.GetImage()->DisconnectPipeline();
+}
+
+void
+SNAPImageData
+::DoBoundaryPreprocessing(const BoundaryLayerSettings &settings)
+{
+  // Create the initial level set image by merging the segmentation data from
+  // IRIS region with the bubbles
+  LabelImageType::Pointer imgInput = m_LabelWrapper.GetImage();
+  SpeedImageType::Pointer imgSpeed = m_SpeedWrapper.GetImage();
+
+  // Get the target region. This really should be a region relative to the IRIS image
+  // data, not an image into a needless copy of an IRIS region.
+  LabelImageType::RegionType region = imgInput->GetBufferedRegion();
+
+  // Create iterators to perform the copy
+  typedef ImageRegionConstIterator<LabelImageType> SourceIterator;
+  typedef ImageRegionIteratorWithIndex<SpeedImageType> TargetIterator;  
+    
+  SourceIterator itSource(imgInput,region);
+  TargetIterator itTarget(imgSpeed,region);
+
+  // Convert the input label image into a binary function whose 0 level set
+  // is the boundary of the current label's region
+  unsigned int i = 0;
+  
+  while(!itSource.IsAtEnd())
+    {
+    if(settings.LabelInBoundary(itSource.Value()))
+      {
+      // Set voxel speed to lowest possible (-1.0)
+      itTarget.Value() = -1.0f;
+      ++i;
+      }
+
+    // Go to the next pixel
+    ++itTarget; ++itSource;
+    }
 }
 
 SpeedImageWrapper* 

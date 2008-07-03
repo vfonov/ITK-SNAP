@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: PreprocessingUILogic.cxx,v $
   Language:  C++
-  Date:      $Date: 2007/12/30 04:05:17 $
-  Version:   $Revision: 1.2 $
+  Date:      $Date: 2008/07/03 20:31:10 $
+  Version:   $Revision: 1.2.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
 
@@ -537,6 +537,12 @@ PreprocessingUILogic
   // Use the SNAPImageData to perform preprocessing
   m_Driver->GetSNAPImageData()->DoInOutPreprocessing(
     m_GlobalState->GetThresholdSettings(),callback);
+  
+  //If we are supposed to do boundary processing, take the first label and use it as a boundary label
+  if (m_BoundaryLayer->value())
+  {
+    m_Driver->GetSNAPImageData()->DoBoundaryPreprocessing(m_GlobalState->GetBoundaryLayerSettings());
+  }
 
   // The preprocessing image is valid
   m_GlobalState->SetSpeedValid(true);

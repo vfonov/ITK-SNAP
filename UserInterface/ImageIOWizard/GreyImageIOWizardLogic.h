@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: GreyImageIOWizardLogic.h,v $
   Language:  C++
-  Date:      $Date: 2007/12/30 04:05:16 $
-  Version:   $Revision: 1.2 $
+  Date:      $Date: 2008/07/03 20:31:10 $
+  Version:   $Revision: 1.2.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -36,7 +36,7 @@
 #define __GreyImageIOWizardLogic_h_
 
 #include "SNAPCommonUI.h"
-#include "RestrictedImageIOWizardLogic.h"
+#include "MergableImageIOWizardLogic.h"
 
 /**
  * \class GreyImageIOWizardLogic
@@ -44,7 +44,7 @@
  * grey images
  */
 class GreyImageIOWizardLogic : 
-  public ImageIOWizardLogic<GreyType> {};
+  public MergableImageIOWizardLogic<GreyType> {};
 
 #endif
 

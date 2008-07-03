@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: IRISApplication.cxx,v $
   Language:  C++
-  Date:      $Date: 2008/03/25 19:31:31 $
-  Version:   $Revision: 1.10 $
+  Date:      $Date: 2008/07/03 20:31:09 $
+  Version:   $Revision: 1.10.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -61,6 +61,7 @@
 #include "itkWindowedSincInterpolateImageFunction.h"
 #include "itkImageFileWriter.h"
 #include "itkFlipImageFilter.h"
+#include "itkVotingBinaryIterativeHoleFillingImageFilter.h"
 
 #include "IRISSlicer.h"
 
@@ -172,10 +173,11 @@ IRISApplication
 
   typedef ImageRegionIterator<LabelImageType> IteratorType;  
   IteratorType itLabel(imgNewLabel,imgNewLabel->GetBufferedRegion());  
+  BoundaryLayerSettings settings = m_GlobalState->GetBoundaryLayerSettings();
   while(!itLabel.IsAtEnd())
     {
-    if(itLabel.Value() != passThroughLabel)
-      itLabel.Value() = (LabelType) 0;
+    if(itLabel.Value() != passThroughLabel && !settings.LabelInBoundary(itLabel.Value())) //HACK to also pass through boundary labels
+    itLabel.Value() = (LabelType) 0;
     ++itLabel;
     }
 
@@ -408,6 +410,12 @@ IRISApplication
   // m_UndoManager.Clear();
 }
 
+LabelImageWrapper::ConstIterator 
+IRISApplication::GetSegmentationImageConstIterator(void)
+{
+	return m_IRISImageData->GetSegmentation()->GetImageConstIterator();
+}
+
 LabelType
 IRISApplication
 ::DrawOverLabel(LabelType iTarget)
@@ -425,6 +433,137 @@ IRISApplication
      ((iMode == PAINT_OVER_ALL) ||
       (iMode == PAINT_OVER_COLORS && visible) ||
       (iMode == PAINT_OVER_ONE && iDrawOver == iTarget)) ? iDrawing : iTarget;
+}
+
+LabelType 
+IRISApplication::GetFirstValidLabel(void)
+{
+	return static_cast<LabelType>(m_ColorLabelTable->GetFirstValidLabel());
+}
+
+void
+IRISApplication
+::FillHoles(size_t radius, size_t iterations, CommandType *progressCommand)
+{
+  typedef LabelImageWrapper::ImageType::SizeType SizeType;
+  
+  SizeType size;
+  SizeType::SizeValueType	sizeValues[3];
+  sizeValues[0] = radius;
+  sizeValues[1] = radius;
+  sizeValues[2] = radius;
+  
+  size.SetSize(sizeValues);
+  
+  typedef VotingBinaryIterativeHoleFillingImageFilter<LabelImageWrapper::ImageType> FilterType;
+  
+  FilterType::Pointer filter = FilterType::New();
+  
+  std::cout << "Starting Filter" << std::endl;
+  std::cout << "radius: " << radius << std::endl;
+  std::cout << "iteration: " << iterations << std::endl;
+  
+  //Now copy the iris data and only preserve the command color
+   LabelImageWrapper::ImageType::Pointer irisImage = m_IRISImageData->GetSegmentation()->GetImage();
+  LabelImageWrapper::ImageType::Pointer tempInput = LabelImageWrapper::ImageType::New();
+  tempInput->SetRegions(
+    irisImage->GetBufferedRegion());
+  tempInput->Allocate();
+  tempInput->SetSpacing(
+    irisImage->GetSpacing());
+  tempInput->SetOrigin(
+    irisImage->GetOrigin());
+  
+  typedef ImageRegionConstIterator<LabelImageWrapper::ImageType> SourceIteratorType;
+  typedef ImageRegionIterator<LabelImageWrapper::ImageType> TargetIteratorType;
+  
+  SourceIteratorType itIRIS(irisImage, irisImage->GetLargestPossibleRegion());
+  TargetIteratorType itTemp(tempInput, irisImage->GetLargestPossibleRegion());
+  //Do the copying 
+  itIRIS.GoToBegin();
+  itTemp.GoToBegin();
+  LabelType drawingLabel = m_GlobalState->GetDrawingColorLabel();
+  
+  size_t numSet = 0;
+  //Only copy over the drawing color and set the rest to clear
+  while (!itIRIS.IsAtEnd())
+  {
+  	LabelType vox = itIRIS.Value();
+  	if (vox == drawingLabel)
+  	{
+  		itTemp.Value() = 1;
+  		++numSet;
+  	}
+  	else
+  		itTemp.Value() = 0;
+  		
+  	++itIRIS; 
+  	++itTemp;
+  }
+  
+  //Save an Undo point
+  this->StoreUndoPoint("Before Hole-Filling");
+  
+  std::cout << numSet << "starting pixels set" << std::endl;
+  	
+  filter->SetInput(tempInput);
+  filter->SetBackgroundValue(0);
+  filter->SetForegroundValue(1);
+  filter->SetRadius(size);
+  filter->SetMaximumNumberOfIterations(iterations);
+  
+  if(progressCommand) 
+    filter->AddObserver(itk::AnyEvent(),progressCommand);
+    
+  filter->Update();
+  
+  LabelImageWrapper::ImageType::Pointer source = filter->GetOutput();
+  LabelImageWrapper::ImageType::Pointer target = m_IRISImageData->GetSegmentation()->GetImage();
+  
+  SourceIteratorType itSource(source,source->GetLargestPossibleRegion());
+  TargetIteratorType itTarget(target,source->GetLargestPossibleRegion());
+
+  //Build a merge table like when copying snap data
+
+  // Construct a merge table that contains an output intensity for every 
+  // possible combination of two input intensities (note that snap image only
+  // has two possible intensities
+  LabelType mergeTable[2][MAX_COLOR_LABELS];
+
+  // Perform the merge
+  for(unsigned int i=0;i<MAX_COLOR_LABELS;i++)
+    {
+    // Whe the SNAP image is clear, IRIS passes through to the output
+    // except for the IRIS voxels of the drawing color, which get cleared out
+    mergeTable[0][i] = (i!=m_GlobalState->GetDrawingColorLabel()) ? i : 0;
+
+    // If mode is paint over all, the victim is overridden
+    mergeTable[1][i] = DrawOverLabel((LabelType) i);
+    }
+
+  numSet = 0;
+  // Go through both iterators, copy the new over the old
+  itSource.GoToBegin();
+  itTarget.GoToBegin();
+  while(!itSource.IsAtEnd())
+    {
+    // Get the two voxels
+    LabelType vox = itSource.Value();
+	LabelType target = itTarget.Value();
+	
+	if (mergeTable[vox][target] == drawingLabel)
+		++numSet;
+		
+	itTarget.Value() = mergeTable[vox][target];
+
+    // Iterate
+    ++itSource;
+    ++itTarget;
+    }
+  
+  target->Modified();
+  std::cout << numSet << "pixels copied back" << std::endl;
+  std::cout << "Done filling holes" << std::endl;  
 }
 
 void 

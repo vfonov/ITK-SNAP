@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: GuidedImageIO.cxx,v $
   Language:  C++
-  Date:      $Date: 2007/12/30 04:05:14 $
-  Version:   $Revision: 1.4 $
+  Date:      $Date: 2008/07/03 20:31:09 $
+  Version:   $Revision: 1.4.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -54,6 +54,7 @@
 #include "itkImageFileWriter.h"
 #include "itkImageSeriesReader.h"
 #include "itkGDCMSeriesFileNames.h"
+#include <sstream>
 
 using namespace itk;
 using namespace std;
@@ -267,6 +268,22 @@ GuidedImageIO<TPixel>
 
     // Get the output image
     m_Image = reader->GetOutput();
+    
+    //Save off the metadata dictionary in case user wants to save a dicom image later
+    const typename ImageSeriesWriter<ImageType, DicomImageType>::DictionaryArrayRawPointer metaDataArray = reader->GetMetaDataDictionaryArray();
+    
+    typename ImageSeriesWriter<ImageType, DicomImageType>::DictionaryArrayType::const_iterator iter;
+    
+    //Clear old data if there is any
+    m_MetaData.clear();
+    
+    for (iter = metaDataArray->begin(); iter != metaDataArray->end(); ++iter)
+    {
+    	//Copy this item
+    	MetaDataDictionary *dataItem = new MetaDataDictionary(**iter);
+    	m_MetaData.push_back(dataItem);
+ 	}
+ 	
     } 
   else
     {
@@ -282,6 +299,9 @@ GuidedImageIO<TPixel>
     // Update the reader
     reader->Update();
     m_Image = reader->GetOutput();   
+    
+    //Clear old metadata if there is any
+    m_MetaData.clear();
     }
 
   // Disconnect the image from the readers, allowing them to be deleted
@@ -289,6 +309,19 @@ GuidedImageIO<TPixel>
 
   // Return the image pointer
   return m_Image;
+}
+
+template<typename TPixel>
+GuidedImageIO<TPixel>
+::~GuidedImageIO()
+{
+	//If we have a metadata array saved off, delete it
+	typename ImageSeriesWriter<ImageType, DicomImageType>::DictionaryArrayType::iterator iter;
+    
+    for (iter = m_MetaData.begin(); iter != m_MetaData.end(); ++iter)
+    {
+    	delete *iter;
+	}
 }
 
 template<typename TPixel>
@@ -300,15 +333,66 @@ GuidedImageIO<TPixel>
   FileFormat format;
   CreateImageIO(folder, format);
 
-  // Save the image
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  typename WriterType::Pointer writer = WriterType::New();
-  
-  writer->SetFileName(FileName);
-  if(m_IOBase)
-    writer->SetImageIO(m_IOBase);
-  writer->SetInput(image);
-  writer->Update();
+  if (format == FORMAT_DICOM)
+  {
+  	//We need to use an Image Series Writer for this
+  	//Make sure we have valid metadata
+  	if (m_MetaData.size() == 0)
+  		throw ExceptionObject("You can only save Dicom Image Series if you intially read in a DICOM image.");
+  	
+  	typedef itk::ImageSeriesWriter<ImageType, DicomImageType> SeriesWriterType;
+  	typename SeriesWriterType::Pointer writer = SeriesWriterType::New();
+  	
+  	//Set the metadata, create all the filenames and then write the image.
+  	vector<string>	fileNames;
+  	//FileName should be a path to the output directory including the base name of the file
+  	//sequence possibly followed by .dcm
+  	string fileName(FileName);
+  	size_t extensionIndex = fileName.rfind(".dcm");
+  	if (extensionIndex < fileName.size())
+  		fileName = fileName.substr(0, extensionIndex);
+  	
+  	unsigned int numFiles = image->GetLargestPossibleRegion().GetSize()[2];
+  	
+  	for (unsigned int i=1; i<=numFiles; ++i)
+  	{
+  		ostringstream nameBuilder;
+  		
+  		nameBuilder << fileName << i << ".dcm";
+  		
+  		fileNames.push_back(nameBuilder.str());
+  	}
+  	
+  	typename ImageType::SizeType size = image->GetLargestPossibleRegion().GetSize();
+  	typename ImageType::SpacingType spacing = image->GetSpacing();
+  	
+  	//For some reason, this call is critical.  Without this,
+  	//The requested region used in ImageSeriesWriter will be e.g.
+  	//(512x317x1) for an image that is (512x512x317)
+  	
+  	image->SetRequestedRegion(image->GetLargestPossibleRegion());	
+  	
+  	writer->SetFileNames(fileNames);
+  	if (m_IOBase)
+  		writer->SetImageIO(m_IOBase);
+  	
+  	writer->SetMetaDataDictionaryArray(&m_MetaData);
+  	writer->SetInput(image);
+  	
+  	writer->Update();
+  }
+  else
+  {
+	  // Save the image
+	  typedef itk::ImageFileWriter<ImageType> WriterType;
+	  typename WriterType::Pointer writer = WriterType::New();
+	  
+	  writer->SetFileName(FileName);
+	  if(m_IOBase)
+		writer->SetImageIO(m_IOBase);
+	  writer->SetInput(image);
+	  writer->Update();
+  }
 }
 
 // Instantiate the classes

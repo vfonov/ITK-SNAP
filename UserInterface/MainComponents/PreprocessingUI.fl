@@ -1,5 +1,5 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0107 
+version 1.0300 
 header_name {.h} 
 code_name {.cxx}
 class PreprocessingUI {open : {private PreprocessingUIBase}
@@ -8,7 +8,7 @@ class PreprocessingUI {open : {private PreprocessingUIBase}
   } {
     Fl_Window m_WinInOut {
       label {Intensity Region Filter} open
-      xywh {988 69 399 350} type Double box PLASTIC_DOWN_BOX
+      xywh {5 91 395 370} type Double box PLASTIC_DOWN_BOX align 5
       code0 {\#include "PreprocessingUIBase.h"} non_modal visible
     } {
       Fl_Value_Slider m_InThresholdSteepness {
@@ -49,17 +49,17 @@ this->OnThresholdSettingsChange();}
       Fl_Button m_BtnThresholdOk {
         label Okay
         callback {this->OnThresholdOk();}
-        tooltip {Accept the speed image and close the window} xywh {170 300 65 25} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX shortcut 0x1ff0d color 180 selection_color 134 labelfont 1 labelsize 12
+        tooltip {Accept the speed image and close the window} xywh {170 321 65 25} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX shortcut 0x1ff0d color 180 selection_color 134 labelfont 1 labelsize 12
       }
       Fl_Button m_BtnThresholdApply {
         label {&Apply}
         callback {this->OnThresholdApply();}
-        tooltip {Accept the speed image, but do not close the window} xywh {245 300 65 25} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX shortcut 0x80061 color 180 selection_color 134 labelsize 12
+        tooltip {Accept the speed image, but do not close the window} xywh {245 321 65 25} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX shortcut 0x80061 color 180 selection_color 134 labelsize 12
       }
       Fl_Button m_BtnThresholdClose {
         label Close
-        callback {this->OnThresholdClose();} selected
-        xywh {320 300 65 25} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX shortcut 0xff1b color 180 selection_color 134 labelsize 12
+        callback {this->OnThresholdClose();}
+        xywh {320 321 65 25} box PLASTIC_UP_BOX down_box PLASTIC_DOWN_BOX shortcut 0xff1b color 180 selection_color 134 labelsize 12
       }
       Fl_Check_Button m_InThresholdPreview {
         label {Preview result}
@@ -81,7 +81,7 @@ this->OnThresholdSettingsChange();}
         }
       }
       Fl_Slider m_OutThresholdProgress {
-        xywh {0 335 400 15} type {Horz Fill} selection_color 180 labelsize 12 align 0 value 1 deactivate
+        xywh {0 355 400 15} type {Horz Fill} selection_color 180 labelsize 12 align 0 value 1 deactivate
       }
       Fl_Value_Input m_InLowerThresholdText {
         label {Lower threshold}
@@ -103,10 +103,14 @@ this->OnThresholdLowerChange(o->value());}
 this->OnThresholdUpperChange(o->value());}
         tooltip {Set the threshold above which the speed function will be negative} xywh {70 220 155 20} type Horizontal color 51 selection_color 197 value 0.3
       }
+      Fl_Check_Button m_BoundaryLayer {
+        label {Use Boundary Label} selected
+        tooltip {Selecting this will look for a boundary layer label name 'Boundary Layer' and use it.} xywh {250 285 25 25} down_box DOWN_BOX labelsize 12
+      }
     }
     Fl_Window m_WinEdge {
       label {Image Edge Filter} open
-      xywh {732 549 400 351} type Double box PLASTIC_DOWN_BOX non_modal visible
+      xywh {619 388 400 350} type Double box PLASTIC_DOWN_BOX hide non_modal
     } {
       Fl_Value_Slider m_InEdgeScale {
         label {Scale of Gaussian blurring (sigma)}

@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: SNAPImageData.h,v $
   Language:  C++
-  Date:      $Date: 2007/12/30 04:05:13 $
-  Version:   $Revision: 1.3 $
+  Date:      $Date: 2008/07/03 20:31:09 $
+  Version:   $Revision: 1.3.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -47,6 +47,7 @@
 #include "SnakeParameters.h"
 #include "SpeedImageWrapper.h"
 #include "LevelSetImageWrapper.h"
+#include "BoundaryLayerSettings.h"
 
 
 #include "EdgePreprocessingSettings.h"
@@ -72,6 +73,7 @@ public:
   // The type of the internal level set image
   typedef itk::Image<float,3> FloatImageType;
   typedef FloatImageType LevelSetImageType;
+  typedef FloatImageType SpeedImageType;
 
   SNAPImageData(IRISApplication *m_Parent);
   ~SNAPImageData();
@@ -193,6 +195,10 @@ public:
    * the level set function used internally for segmentation */
   SNAPLevelSetFunction<SpeedImageWrapper::ImageType> *GetLevelSetFunction();
   
+  /** This function allows one to set a label that should be used as a boundary that the segmentation
+  snake should not cross.  This works by setting the speed image to -1.0 in that region.  This only
+  works for region intensity preimage processing.*/
+  void DoBoundaryPreprocessing(const BoundaryLayerSettings &settings);
 private:
 
   /** A functor for inverting an image */

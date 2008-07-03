@@ -1,0 +1,61 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0300 
+header_name {.h} 
+code_name {.cxx}
+class MergeLabelsUI {open : {private MergeLabelsUIBase}
+} {
+  Function {MakeWindow()} {open
+  } {
+    Fl_Window m_MainWin {
+      label {Merge Labels} open
+      xywh {22 71 430 300} type Double
+      code0 {\#include "MergeLabelsUIBase.h"} visible
+    } {
+      Fl_Group {} {
+        label {All Labels} open
+        xywh {10 29 160 222} labelsize 12
+      } {
+        Fl_Browser m_LabelsBrowser {
+          xywh {15 33 155 215} type Hold textfont 4 textsize 11
+        }
+      }
+      Fl_Button {} {
+        label Add
+        callback {OnAddLabelAction()}
+        xywh {182 97 64 20} box PLASTIC_UP_BOX labelsize 12
+      }
+      Fl_Button {} {
+        label Remove
+        callback {OnRemoveLabelAction()}
+        xywh {182 122 64 20} box PLASTIC_UP_BOX labelsize 12
+      }
+      Fl_Group {} {
+        label {Merge Labels} open
+        xywh {253 30 165 200} labelsize 12
+      } {
+        Fl_Browser m_MergeLabelsBrowser {
+          xywh {258 35 160 192} type Hold labelsize 13 textfont 4 textsize 11
+        }
+      }
+      Fl_Choice m_OutputLabelChooser {
+        label {Output Label:} open
+        xywh {336 236 82 15} down_box BORDER_BOX labelsize 12 textfont 4 textsize 11
+      } {}
+      Fl_Button {} {
+        label Cancel
+        callback {OnCloseAction()}
+        xywh {190 270 64 20} box PLASTIC_UP_BOX labelsize 12
+      }
+      Fl_Button {} {
+        label Apply
+        callback {OnApplyAction()}
+        xywh {285 270 64 20} box PLASTIC_UP_BOX labelsize 12
+      }
+      Fl_Button {} {
+        label OK
+        callback {OnAcceptAction()}
+        xywh {354 270 64 20} box PLASTIC_UP_BOX labelsize 12
+      }
+    }
+  }
+} 

@@ -1,5 +1,5 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0107 
+version 1.0300 
 header_name {.h} 
 code_name {.cxx}
 class ImageIOWizard {open : {private ImageIOWizardBase}
@@ -7,9 +7,9 @@ class ImageIOWizard {open : {private ImageIOWizardBase}
   Function {MakeWindow()} {open return_type {virtual void}
   } {
     Fl_Window m_WinInput {
-      label {SnAP Image Input Wizard} open
-      xywh {200 612 470 330} type Double
-      code0 {\#include "ImageIOWizardBase.h"} modal visible
+      label {SnAP Image Input Wizard}
+      xywh {-4 539 470 330} type Double hide
+      code0 {\#include "ImageIOWizardBase.h"} modal
     } {
       Fl_Wizard m_WizInput {open
         xywh {-5 -10 505 395}
@@ -531,7 +531,7 @@ the selected image orientation} open
           }
           Fl_Value_Output m_OutSummarySize {
             label {Size in KB:}
-            xywh {100 255 95 20} color 54 labelsize 12 maximum 1e+008 textsize 12
+            xywh {100 255 95 20} color 54 labelsize 12 maximum 1e+08 textsize 12
           }
           Fl_Output m_OutSummaryFileName {
             label {File name:}
@@ -554,7 +554,7 @@ the selected image orientation} open
             xywh {100 135 95 22} color 54 labelsize 12 textsize 12
           }
           Fl_Output m_OutSummaryOrigin {
-            label {Origin:} selected
+            label {Origin:}
             tooltip {Note: origin information is not compatible with SPM/MRICro for Analyze files} xywh {100 165 95 22} color 54 labelsize 12 textsize 12
           }
           Fl_Group {} {
@@ -569,15 +569,15 @@ the selected image orientation} open
       }
     }
     Fl_Window m_WinOutput {
-      label {SnAP Save Image Wizard}
-      xywh {809 580 470 330} type Double modal visible
+      label {SnAP Save Image Wizard} open
+      xywh {604 504 470 330} type Double modal visible
     } {
-      Fl_Wizard m_WizOutput {
+      Fl_Wizard m_WizOutput {open
         xywh {-5 -10 505 395}
       } {
         Fl_Group m_PageSaveFile {
-          label {File Selection}
-          xywh {0 0 470 330} box PLASTIC_DOWN_BOX labelfont 2 labelsize 10
+          label {File Selection} open
+          xywh {0 0 470 330} box PLASTIC_DOWN_BOX labelfont 2 labelsize 10 hide
         } {
           Fl_Group {} {
             label {Choose a file name to save the image:}
@@ -609,7 +609,7 @@ the selected image orientation} open
             }
           }
           Fl_Group {} {
-            label {Button Group}
+            label {Button Group} open
             xywh {190 285 280 45} labeltype NO_LABEL
           } {
             Fl_Button m_BtnSaveFilePageNext {
@@ -621,6 +621,87 @@ the selected image orientation} open
               label Cancel
               callback {this->OnSaveCancel();}
               xywh {380 295 80 25} box PLASTIC_UP_BOX shortcut 0xff1b color 180 labelsize 12
+            }
+            Fl_Button m_BtnSaveFilePageMerge {
+              label {&Next}
+              callback {this->OnSaveFilePageNext();}
+              xywh {290 295 80 25} box PLASTIC_UP_BOX shortcut 0x4006e color 180 labelfont 1 labelsize 12 hide hotspot
+            }
+          }
+          Fl_Check_Button m_MergeSegmentationCheckbox {
+            label {Merge Segmentation:}
+            callback {OnSaveFilePageMergeSegmentationChange()}
+            xywh {151 245 64 14} down_box DOWN_BOX labelsize 12 align 4
+          }
+        }
+        Fl_Group m_PageMergeSegmentation {open
+          xywh {20 15 440 306} labelsize 12
+        } {
+          Fl_Button {} {
+            label {&Back}
+            callback {OnMergePageBack()}
+            xywh {190 294 80 25} box PLASTIC_UP_BOX shortcut 0xffe7 color 180 labelsize 12
+          }
+          Fl_Button {} {
+            label Save
+            callback {OnMergePageSave()}
+            xywh {379 294 80 25} box PLASTIC_UP_BOX shortcut 0xff0d color 180 labelsize 12
+          }
+          Fl_Button {} {
+            label Cancel
+            callback {OnMergePageCancel()}
+            xywh {295 294 80 25} box PLASTIC_UP_BOX shortcut 0xff1b color 180 labelsize 12
+          }
+          Fl_Group {} {
+            label {Unassigned Labels} open
+            xywh {24 34 140 101} labelsize 12
+          } {
+            Fl_Browser m_UnassignedLabels {
+              callback {OnUnassignedLabelsChanged()}
+              tooltip {Select segmentation labels from here that you wish to assign a greyscale value in the flattened image.} xywh {29 39 135 96} type Hold labelsize 12 when 3 textsize 12
+            }
+          }
+          Fl_Group {} {
+            label {Assigned Labels} open
+            xywh {24 182 140 101} labelsize 12
+          } {
+            Fl_Browser m_AssignedLabels {
+              callback {OnAssignedLabelsChanged()}
+              tooltip {These are the labels that will currently be combined into the final flattened image.} xywh {29 186 135 96} type Hold labelsize 12 when 3 textsize 12
+            }
+          }
+          Fl_Button m_AssignButton {
+            callback {OnAssignLabel()}
+            image {../MainComponents/Artwork/down.gif} xywh {72 143 20 20} box PLASTIC_UP_BOX
+          }
+          Fl_Button m_UnassignButton {
+            callback {OnUnassignLabel()}
+            image {../MainComponents/Artwork/up.gif} xywh {97 143 20 20} box PLASTIC_UP_BOX
+          }
+          Fl_Group {} {
+            label {Edit Label} open
+            xywh {240 34 200 200} box ENGRAVED_BOX labelsize 12
+          } {
+            Fl_Output m_LabelName {
+              label {Label Name:}
+              xywh {320 55 115 24} labelsize 12 textsize 12
+            }
+            Fl_Output m_LabelValue {
+              label {Label Value:}
+              xywh {320 86 115 24} labelsize 12 textsize 12
+            }
+            Fl_Value_Input m_LabelAssignment {
+              label {Map To:}
+              tooltip {Every voxel that has this label will have its greyscale value overwritten with this value.} xywh {363 137 72 24} labelsize 12 textsize 12
+            }
+            Fl_Value_Input m_OutputReassignment {
+              label {Reassign Output As:} selected
+              tooltip {Since other voxels may have that same greyscale value, they will all be remapped to this value, so that the only voxels in the image with the "Map To" value are those that had this segmentation label.} xywh {363 166 72 23} labelsize 12 textsize 12
+            }
+            Fl_Button m_LabelEditorApplyButton {
+              label Apply
+              callback {OnMergePageApplyLabel()}
+              xywh {380 204 55 25} box PLASTIC_UP_BOX labelsize 12
             }
           }
         }

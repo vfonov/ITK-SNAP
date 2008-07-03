@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: GuidedImageIO.h,v $
   Language:  C++
-  Date:      $Date: 2007/12/30 04:05:14 $
-  Version:   $Revision: 1.3 $
+  Date:      $Date: 2008/07/03 20:31:09 $
+  Version:   $Revision: 1.3.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -39,11 +39,14 @@
 #include "itkSmartPointer.h"
 #include "itkImage.h"
 #include "itkImageIOBase.h"
+#include "itkImageSeriesWriter.h"
 
 namespace itk
 {
   template<class TPixel, unsigned int VDim> class Image;
   class ImageIOBase;
+  
+  class MetaDataDictionary;
 }
 
 class GuidedImageIOBase
@@ -106,13 +109,15 @@ template<typename TPixel>
 class GuidedImageIO : public GuidedImageIOBase
 {
 public:
-
+  virtual ~GuidedImageIO();
+  
   // An enum of different file types used in SNAP
   typedef GuidedImageIOBase::FileFormat FileFormat;
   typedef GuidedImageIOBase::RawPixelType RawPixelType;
 
   // Image type. This is only for 3D images.
   typedef itk::Image<TPixel, 3> ImageType;
+  typedef itk::Image<TPixel, 2> DicomImageType;
   typedef itk::SmartPointer<ImageType> ImagePointer;
   typedef itk::SmartPointer<itk::ImageIOBase> IOBasePointer;
 
@@ -126,6 +131,12 @@ public:
 
   /** Save an image using the Registry folder to specify parameters */
   void SaveImage(const char *FileName, Registry &folder, ImageType *image);
+  
+  const typename itk::ImageSeriesWriter<ImageType, DicomImageType>::DictionaryArrayRawPointer GetMetaDataArray()
+  {
+  	return &m_MetaData;
+  }
+  
 
 private:
   
@@ -134,6 +145,9 @@ private:
 
   // The image resulting from the load operations
   ImagePointer m_Image;
+  
+  //The metadata from the read in file (needed to save dicom files)
+  typename itk::ImageSeriesWriter<ImageType, DicomImageType>::DictionaryArrayType m_MetaData;
 };
 
 #endif

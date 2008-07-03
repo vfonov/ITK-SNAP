@@ -1,0 +1,52 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0300 
+header_name {.h} 
+code_name {.cxx}
+class BoundaryEditorUI {open : {private BoundaryEditorUIBase}
+} {
+  Function {MakeWindow(void)} {open
+  } {
+    Fl_Window m_MainWin {
+      label {Boundary Layer Editor} open selected
+      protected xywh {22 273 420 325} type Double hide
+      code0 {\#include "BoundaryEditorUIBase.h"}
+    } {
+      Fl_Group {} {
+        label {Normal Labels} open
+        xywh {10 30 142 250}
+      } {
+        Fl_Browser m_NormalLabelBrowser {
+          protected xywh {12 35 140 245} type Hold labelsize 12 textfont 4 textsize 11
+        }
+      }
+      Fl_Button {} {
+        label Add
+        callback {this->OnAddToBoundaryAction()}
+        tooltip {Add the selected Normal Label to the Boundary Label List} xywh {177 110 64 20} box PLASTIC_UP_BOX color 41 labelsize 12
+      }
+      Fl_Button {} {
+        label Remove
+        callback {this->OnRemoveFromBoundaryAction()}
+        xywh {177 140 64 20} box PLASTIC_UP_BOX labelsize 12
+      }
+      Fl_Group {} {
+        label {Boundary Labels} open
+        xywh {262 30 150 255}
+      } {
+        Fl_Browser m_BoundaryLabelBrowser {
+          xywh {267 35 140 245} type Hold labelsize 12 textfont 4 textsize 11
+        }
+      }
+      Fl_Button {} {
+        label Cancel
+        callback {OnCloseAction()}
+        xywh {266 295 64 20} box PLASTIC_UP_BOX labelsize 12
+      }
+      Fl_Return_Button {} {
+        label OK
+        callback {OnAcceptAction()}
+        xywh {340 295 66 20} box PLASTIC_UP_BOX labelsize 12
+      }
+    }
+  }
+} 

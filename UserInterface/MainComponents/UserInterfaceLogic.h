@@ -3,8 +3,8 @@
   Program:   ITK-SNAP
   Module:    $RCSfile: UserInterfaceLogic.h,v $
   Language:  C++
-  Date:      $Date: 2008/03/25 19:31:33 $
-  Version:   $Revision: 1.13 $
+  Date:      $Date: 2008/07/03 20:31:10 $
+  Version:   $Revision: 1.13.4.1 $
   Copyright (c) 2007 Paul A. Yushkevich
   
   This file is part of ITK-SNAP 
@@ -64,6 +64,8 @@ class SimpleFileDialogLogic;
 class ResizeRegionDialogLogic;
 class AppearanceDialogUILogic;
 class Window3D;
+class BoundaryEditorUILogic;
+class MergeLabelsUILogic;
 
 template <class TFlag> class FLTKWidgetActivationManager;
 //template<class TPixel> class ImageIOWizardLogic;
@@ -612,6 +614,12 @@ public:
   double GetFreehandFittingRate()
     { return m_InIRISFreehandFittingRate->value(); }
 
+  // Show boundary layer editor
+  void OnEditBoundaryLayers();
+  void OnMergeLabels();
+  void OnFillHoles();
+  void OnSaveGreyscaleImage();
+  
 protected:
 
   /**
@@ -705,7 +713,6 @@ protected:
 
   // Toggle cursor synchronization
   void OnSynchronizeCursorAction();
-
 
   char *m_ChosedFile;
 
@@ -820,6 +827,12 @@ private:
 
   /** A dialog for showing display options */
   AppearanceDialogUILogic *m_DlgAppearance;
+  
+  /** A window for editing boundary layers */
+  BoundaryEditorUILogic	*m_BoundaryEditorUI;
+  
+  /** A window for merging labels together */
+  MergeLabelsUILogic *m_MergeLabelsUI;
 
   /** Help window */
   HelpViewerLogic *m_HelpUI;
@@ -931,6 +944,9 @@ private:
 
 /*
  *$Log: UserInterfaceLogic.h,v $
+ *Revision 1.13.4.1  2008/07/03 20:31:10  timburke1661
+ *Adding Label Merging, Boundary Definition, Greysale Image Saving, Segmentation Flattening, and Hole Filling
+ *
  *Revision 1.13  2008/03/25 19:31:33  pyushkevich
  *Bug fixes for release 1.6.0
  *
