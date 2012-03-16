@@ -489,56 +489,14 @@ SET(SNAP_EXTERNAL_LIBS
 ############################################
 # MINC integration                         #
 ############################################
-OPTION(USE_EZMINC "Use EZMINC for minc support")
+FIND_PACKAGE(MINC2 QUIET) 
 
 # Minc libraries
-IF(USE_EZMINC)
-
-  SET(EZMINC_ROOT "/usr/local/bic" CACHE PATH "EZMinc library base")
-  SET(MINC_ROOT "/usr/local/bic" CACHE PATH "MINC library base")
-  OPTION(USE_MINC2 "Use minc 2 library" ON)
+IF(HAVE_EZMINC)
+  INCLUDE( ${MINC2_USE_FILE} )
   ADD_DEFINITIONS( -DUSE_EZMINC )
-  
-  LINK_DIRECTORIES(
-  "${MINC_ROOT}/lib"
-  )
-  
-  INCLUDE_DIRECTORIES(
-    "${MINC_ROOT}/include"
-  )
-
-  LINK_DIRECTORIES(
-  "${EZMINC_ROOT}/lib"
-  )
-  
-  INCLUDE_DIRECTORIES(
-  "${EZMINC_ROOT}/include"
-  )
-
-  IF(USE_MINC2)
-    ADD_DEFINITIONS( -DMINC2 )
-    SET(SNAP_MINC_LIBS
-      minc4itk
-      minc_io
-      minc2
-      netcdf
-      hdf5
-      z
-     )
-  ELSE(USE_MINC2)
-    LINK_LIBRARIES(minc_io volume_io minc netcdf)
-    
-    SET(SNAP_MINC_LIBS
-      minc4itk
-      minc_io
-      minc
-      netcdf
-      )
-  ENDIF(USE_MINC2)
- 
-  SET(SNAP_EXTERNAL_LIBS ${SNAP_EXTERNAL_LIBS} ${SNAP_MINC_LIBS})
-
-ENDIF(USE_EZMINC)
+  SET(SNAP_EXTERNAL_LIBS ${SNAP_EXTERNAL_LIBS} ${EZMINC_LIBRARIES})
+ENDIF(HAVE_EZMINC)
 
 
 
