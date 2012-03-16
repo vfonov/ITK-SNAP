@@ -63,6 +63,11 @@
 #include "itkShiftScaleImageFilter.h"
 #include "itkNumericTraits.h"
 
+#ifdef USE_EZMINC
+#include "itkMincImageIOFactory.h"
+#include "itkMincImageIO.h"
+#endif
+
 
 using namespace std;
 
@@ -86,6 +91,9 @@ GuidedNativeImageIO
   {"VTK", "vtk",                     true,  false, true,  true},
   {"VoxBo CUB", "cub,cub.gz",        true,  false, true,  true},
   {"NRRD", "nrrd,nhdr",              true,  true,  true,  true},
+#ifdef USE_EZMINC
+  {"MINC", "mnc,mnc.gz",             true,  true,  true,  true},
+#endif
   {"INVALID FORMAT", "",             false, false, false, false}};
 
 GuidedNativeImageIO
@@ -204,6 +212,9 @@ GuidedNativeImageIO
   // Choose the approach based on the file format
   switch(m_FileFormat)
     {
+#ifdef USE_EZMINC
+    case FORMAT_MINC:       m_IOBase = itk::MincImageIO::New();          break;
+#endif
     case FORMAT_MHA:        m_IOBase = itk::MetaImageIO::New();          break;
     case FORMAT_NRRD:       m_IOBase = itk::NrrdImageIO::New();          break;
     case FORMAT_ANALYZE:    m_IOBase = itk::AnalyzeImageIO::New();       break;

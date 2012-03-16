@@ -76,6 +76,7 @@ IF( BUILD_OUTSIDE_INSIGHT_APPLICATIONS )
   INCLUDE(${SNAP_SOURCE_DIR}/CMake/standalone.cmake)
 ENDIF( BUILD_OUTSIDE_INSIGHT_APPLICATIONS )
 
+
 #############################################
 # SOURCE FILE SPECIFICATION                 #
 #############################################
@@ -468,7 +469,7 @@ ELSE(VTK_USE_PATENTED)
 ENDIF(VTK_USE_PATENTED)
 
 # FLTK Related libraries
-SET(SNAP_FLTK_LIBS ${FLTK_LIBRARIES})
+SET(SNAP_FLTK_LIBS ${FLTK_LIBRARIES} )
 
 # System libraries
 SET(SNAP_SYSTEM_LIBS
@@ -483,6 +484,63 @@ SET(SNAP_EXTERNAL_LIBS
   ${SNAP_ITK_LIBS} 
   ${SNAP_VTK_LIBS} 
   ${SNAP_SYSTEM_LIBS})
+
+
+############################################
+# MINC integration                         #
+############################################
+OPTION(USE_EZMINC "Use EZMINC for minc support")
+
+# Minc libraries
+IF(USE_EZMINC)
+
+  SET(EZMINC_ROOT "/usr/local/bic" CACHE PATH "EZMinc library base")
+  SET(MINC_ROOT "/usr/local/bic" CACHE PATH "MINC library base")
+  OPTION(USE_MINC2 "Use minc 2 library" ON)
+  ADD_DEFINITIONS( -DUSE_EZMINC )
+  
+  LINK_DIRECTORIES(
+  "${MINC_ROOT}/lib"
+  )
+  
+  INCLUDE_DIRECTORIES(
+    "${MINC_ROOT}/include"
+  )
+
+  LINK_DIRECTORIES(
+  "${EZMINC_ROOT}/lib"
+  )
+  
+  INCLUDE_DIRECTORIES(
+  "${EZMINC_ROOT}/include"
+  )
+
+  IF(USE_MINC2)
+    ADD_DEFINITIONS( -DMINC2 )
+    SET(SNAP_MINC_LIBS
+      minc4itk
+      minc_io
+      minc2
+      netcdf
+      hdf5
+      z
+     )
+  ELSE(USE_MINC2)
+    LINK_LIBRARIES(minc_io volume_io minc netcdf)
+    
+    SET(SNAP_MINC_LIBS
+      minc4itk
+      minc_io
+      minc
+      netcdf
+      )
+  ENDIF(USE_MINC2)
+ 
+  SET(SNAP_EXTERNAL_LIBS ${SNAP_EXTERNAL_LIBS} ${SNAP_MINC_LIBS})
+
+ENDIF(USE_EZMINC)
+
+
 
 # *****************************************************
 # SNAP Logic and UI Libraries
@@ -597,9 +655,9 @@ IF(MSVC80 OR MSVC90)
 ENDIF(MSVC80 OR MSVC90)
 
 # Allow package generation
-SET(CPACK_PACKAGE_NAME "itksnap")
+SET(CPACK_PACKAGE_NAME "minc_itksnap")
 SET(CPACK_PACKAGE_CONTACT "Paul A. Yushkevich")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "ITK-SNAP 3D Image Segmentation Tool")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "ITK-SNAP 3D Image Segmentation Tool with MINC1/2 support")
 SET(CPACK_PACKAGE_VENDOR "itksnap.org")
 SET(CPACK_PACKAGE_VERSION_MAJOR "${SNAP_VERSION_MAJOR}")
 SET(CPACK_PACKAGE_VERSION_MINOR "${SNAP_VERSION_MINOR}")
@@ -630,7 +688,7 @@ ELSE(WIN32 AND NOT UNIX)
 
   # Set the generator to either STGZ or Apple
   IF(NOT APPLE)
-    SET(CPACK_GENERATOR "TGZ")
+    SET(CPACK_GENERATOR "DEB")
   ELSE(NOT APPLE)
     SET(CPACK_GENERATOR "ZIP")
   ENDIF(NOT APPLE)

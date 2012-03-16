@@ -73,7 +73,9 @@ ImageCoordinateGeometry
   for(unsigned int slice=0;slice < 3;slice++)
     {
     // Make sure the code is valid
+#ifndef USE_EZMINC  //VF: try to recover using default orientation, in MINC it's easy     
     assert(IsRAICodeValid(displayAnatomyRAICode[slice].c_str()));
+#endif //USE_EZMINC   
     
     m_AnatomyToDisplayTransform[slice].SetTransform(
       InvertMappingVector(
@@ -132,7 +134,13 @@ Vector3i
 ImageCoordinateGeometry
 ::ConvertRAIToCoordinateMapping(const char *rai)
 {
+  
+#ifdef USE_EZMINC
+  if(!IsRAICodeValid(rai))
+    rai="LPI"; //fallback to hardcoded variant
+#else
   assert(IsRAICodeValid(rai));
+#endif //USE_EZMINC
   
   Vector3i result;
 
@@ -165,7 +173,12 @@ ImageCoordinateGeometry
 ::ConvertDirectionMatrixToClosestRAICode(DirectionMatrix mat)
 {
   // RAI codes for cardinal directions
+#ifdef USE_EZMINC
+  const static std::string rai_start("LPI"), rai_end("RAS"); //VF: Minc uses neurological notation, and it assumes that LPI has identity direction cosines
+#else  //USE_EZMINC
   const static std::string rai_start("RAI"), rai_end("LPS");
+#endif  //USE_EZMINC
+
   std::string rai_out("...");
 
   for(size_t i = 0; i < 3; i++)

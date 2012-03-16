@@ -56,6 +56,10 @@
 #include "itkImageFileReader.h"
 #include "itkNumericTraits.h"
 
+#ifdef USE_EZMINC //VF: MINC Support
+#include "itkMincImageIOFactory.h"
+#include "itkMincImageIO.h"
+#endif
 
 #include <itksys/SystemTools.hxx>
 
@@ -307,6 +311,10 @@ int main(int argc, char **argv)
     usage();
     return 0;
     }
+    
+#ifdef USE_EZMINC  
+  itk::ObjectFactoryBase::RegisterFactory(itk::MincImageIOFactory::New());
+#endif //  USE_EZMINC 
 
   // Create a new IRIS application
   IRISApplication *iris = new IRISApplication;
