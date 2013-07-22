@@ -66,7 +66,12 @@
 #ifdef USE_EZMINC
 #include "itkMincImageIOFactory.h"
 #include "itkMincImageIO.h"
-#endif
+#include <minc_io_exceptions.h>
+#include <minc_io_fixed_vector.h>
+#include <itkMincHelpers.h>
+#include <time_stamp.h> // for creating minc style history entry
+using namespace minc;
+#endif //USE_EZMINC
 
 
 using namespace std;
@@ -502,6 +507,67 @@ GuidedNativeImageIO
 {
   // Create an Image IO based on the folder
   CreateImageIO(FileName, folder, false);
+
+#ifdef USE_EZMINC
+  // If we are dealing with MINC files, we should create/update the history 
+  // attribute. If a segmentation was loaded, its history should be
+  // appended, if not, the history attribute should be initialized
+  if(m_FileFormat == FORMAT_MINC)
+    {
+    // get the current time for MINC style history entry
+    time_t current_time;
+    char *c_time_string;
+    current_time = time(NULL);
+    c_time_string = ctime(&current_time);
+    size_t ln = strlen(c_time_string) - 1;
+    if(c_time_string[ln] == '\n')
+      {
+      c_time_string[ln] = '\0';
+      }
+
+    if(m_NativeFileName.empty())
+      {
+      char c_histEntry[] = ">>> Segmentation created in itk-snap\n";
+
+      char *addToHist;
+      addToHist = new char[strlen(c_time_string) + strlen(c_histEntry) + 1];
+      strcpy(addToHist, c_time_string);
+      strcat(addToHist, c_histEntry);
+
+      itk::RegisterMincIO();
+      minc::append_history(image,addToHist);
+
+      delete [] addToHist;
+      } // m_NativeFileName.empty()
+    else
+      {
+      // also add in the filename:
+      char c_histEntry[] = ">>> Segmentation edited in itk-snap using input file: ";
+
+      char *addToHist;
+      addToHist = new char[strlen(c_time_string) + strlen(c_histEntry) + m_NativeFileName.length() + 2];
+      strcpy(addToHist, c_time_string);
+      strcat(addToHist, c_histEntry);
+      strcat(addToHist, m_NativeFileName.c_str());
+      strcat(addToHist, "\n");
+
+      itk::RegisterMincIO();
+      
+      //read the input file in order to get original history information
+      typedef itk::Image<float,3> ImageType;
+      ImageType::Pointer origInput(ImageType::New());
+      itk::ImageFileReader<ImageType >::Pointer reader = itk::ImageFileReader<ImageType >::New();
+      reader->SetFileName(m_NativeFileName.c_str());
+      reader->Update();
+      origInput = reader->GetOutput();
+
+      minc::copy_metadata(image,origInput);
+      minc::append_history(image,addToHist);
+
+      delete [] addToHist;
+      } // ! m_NativeFileName.empty() 
+    } //if(m_FileFormat == FORMAT_MINC)
+#endif // USE_EZMINC
 
   // Save the image
   typedef itk::ImageFileWriter< itk::Image<TPixel,3> > WriterType;
