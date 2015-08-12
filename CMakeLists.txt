@@ -36,7 +36,8 @@ SET(SNAP_VERSION_LAST_COMPATIBLE_RELEASE_DATE "20090731")
 SET(SNAP_VERSION_RELEASE_DATE_FORMATTED "Nov 21, 2012")
 
 # Get the current Git branch
-include(CMake/GitBranch)
+SET(CMAKE_MODULE_PATH ${SNAP_SOURCE_DIR}/CMake)
+include(GitBranch)
 get_git_branch(SNAP_VERSION_GIT_BRANCH)
 
 # Print the Git information
