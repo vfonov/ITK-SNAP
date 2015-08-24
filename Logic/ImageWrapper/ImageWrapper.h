@@ -39,7 +39,7 @@
 #include "SNAPCommon.h"
 #include "ImageCoordinateTransform.h"
 #include <itkImageRegionIterator.h>
-#include <itkOrientedImage.h>
+#include <itkImage.h>
 #include <itkRGBAPixel.h>
 
 // Forward declarations to IRIS classes
@@ -85,14 +85,15 @@ public:
   virtual Vector3d TransformNIFTICoordinatesToVoxelIndex(const Vector3d &vNifti) const = 0;
   virtual vnl_matrix_fixed<double, 4, 4> GetNiftiSform() const = 0;
   virtual DisplaySlicePointer GetDisplaySlice(unsigned int dim) const = 0;
-
+  virtual void SetDirectionCosineMatrix(const itk::Matrix<double, 3, 3> & aitkMtrx) = 0;
+    
   // Delete internal data structures
   virtual void Reset() = 0;
 };
 
 /**
  * \class ImageWrapper
- * \brief A wrapper around an itk::OrientedImage and related pipelines.
+ * \brief A wrapper around an itk::Image and related pipelines.
  * 
  * Image Wrapper serves as a wrapper around an image pointer, and 
  * is used to unify the treatment of different kinds of images in
@@ -103,7 +104,7 @@ template<class TPixel> class ImageWrapper : public ImageWrapperBase
 public:
 
   // Basic type definitions
-  typedef itk::OrientedImage<TPixel,3> ImageType;
+  typedef itk::Image<TPixel,3> ImageType;
   typedef typename itk::SmartPointer<ImageType> ImagePointer;
 
   // Slice image type
@@ -363,6 +364,8 @@ public:
   irisGetMacro(Alpha, unsigned char);
   virtual void ToggleVisibility();
 
+  virtual void SetDirectionCosineMatrix(const itk::Matrix<double, 3, 3> & aitkMtrx);
+    
 protected:
 
   /** The image that we are wrapping */

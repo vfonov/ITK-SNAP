@@ -21,13 +21,14 @@
 #include "PreprocessingUILogic.h"
 
 #include "GlobalState.h"
+#include "IRISException.h"
 #include "IRISApplication.h"
 #include "IRISImageData.h"
 #include "SNAPImageData.h"
 #include "ThresholdSettings.h"
 #include "UserInterfaceBase.h"
 
-#include "itkOrientedImage.h"
+#include "itkImage.h"
 #include "itkEventObject.h" 
 
 

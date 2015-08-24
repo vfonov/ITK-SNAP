@@ -36,6 +36,7 @@
 
 #include "GlobalState.h"
 #include "OpenGLSliceTexture.h"
+#include "IRISException.h"
 #include "IRISApplication.h"
 #include "IRISImageData.h"
 #include "UserInterfaceBase.h"
@@ -51,7 +52,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "itkOrientedImage.h"
+#include "itkImage.h"
 #include "itkImageRegionIteratorWithIndex.h"
 
 using namespace std;
@@ -204,7 +205,7 @@ IRISSliceWindow
     unsigned int nUpdates = 0;
 
     // Iterate
-    for (itPolygon.Begin(); !itPolygon.IsAtEnd(); ++itPolygon)
+    for (; !itPolygon.IsAtEnd(); ++itPolygon)
     {
       // Get the current polygon pixel      
       PolygonSliceType::PixelType pxPolygon = itPolygon.Get();

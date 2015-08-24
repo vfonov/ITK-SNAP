@@ -470,7 +470,7 @@ Window3D
     m_ImageSize = m_Driver->GetCurrentImageData()->GetVolumeExtents();  
 
     // world transform
-    m_WorldMatrix = m_Driver->GetCurrentImageData()->GetMain()->GetNiftiSform();
+    ResetWorldMatrix();
 
     // Volume size
     m_VolumeSize = vector_multiply_mixed<double,unsigned int,3>(
@@ -499,6 +499,20 @@ Window3D
   m_ParentUI->OnTrackballUpdate();
 }
 
+void
+Window3D
+::ResetWorldMatrix()
+{
+
+  if (m_Driver->GetCurrentImageData()->IsMainLoaded())
+    {
+
+    // world transform
+    m_WorldMatrix = m_Driver->GetCurrentImageData()->GetMain()->GetNiftiSform();
+
+    }
+}
+
 void 
 Window3D
 ::UpdateMesh(itk::Command *command)
@@ -511,6 +525,10 @@ Window3D
   catch(vtkstd::bad_alloc &)
     {
     fl_alert("Out of memory error when generating 3D mesh.");
+    }
+  catch(IRISException & IRISexc)
+    {
+    fl_alert("%s", IRISexc.what());
     }
   m_Canvas->redraw();
 }

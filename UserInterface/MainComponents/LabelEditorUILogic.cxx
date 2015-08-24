@@ -35,6 +35,7 @@
 #include "LabelEditorUILogic.h"
 #include "UserInterfaceLogic.h"
 #include "GlobalState.h"
+#include "IRISException.h"
 #include "IRISApplication.h"
 #include "IRISImageData.h"
 
@@ -349,6 +350,33 @@ LabelEditorUILogic
   m_Parent->OnLabelListUpdate();
 
 }
+
+void
+LabelEditorUILogic
+::OnDeleteAllAction()
+{
+  // Reset the label table to the defaults (six labels)
+  m_Driver->GetColorLabelTable()->InitializeToDefaults();
+
+  // We also must make sure that all labels in the segmentation image are there
+  if(m_Driver->GetIRISImageData()->IsSegmentationLoaded())
+    {
+    LabelImageWrapper::ConstIterator it = 
+      m_Driver->GetIRISImageData()->GetSegmentation()->GetImageConstIterator();
+    for( ; !it.IsAtEnd(); ++it)
+      if(!m_Driver->GetColorLabelTable()->IsColorLabelValid(it.Get()))
+        m_Driver->GetColorLabelTable()->SetColorLabelValid(it.Get(), true);
+    }
+
+  // Reset the drawing and draw-over
+  m_GlobalState->SetDrawingColorLabel(
+    m_Driver->GetColorLabelTable()->GetFirstValidLabel());
+  m_GlobalState->SetOverWriteColorLabel(0);
+
+  // Update the UI
+  this->OnLabelListUpdate(m_GlobalState->GetDrawingColorLabel());
+  m_Parent->OnLabelListUpdate();
+}
   
 void
 LabelEditorUILogic
@@ -540,7 +568,7 @@ LabelEditorUILogic
   else if(m_InToolsOperation->value() == 1)
     {
     // Get the segmentation image
-    typedef itk::OrientedImage<LabelType, 3> LabelImageType;
+    typedef itk::Image<LabelType, 3> LabelImageType;
     LabelImageType::Pointer iSeg =
       m_Driver->GetCurrentImageData()->GetSegmentation()->GetImage();
 

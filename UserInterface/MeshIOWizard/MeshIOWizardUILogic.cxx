@@ -33,6 +33,7 @@
 
 =========================================================================*/
 #include "MeshIOWizardUILogic.h"
+#include "IRISException.h"
 #include "IRISApplication.h"
 #include "GuidedMeshIO.h"
 #include "FL/Fl_Native_File_Chooser.H"
@@ -304,13 +305,16 @@ MeshIOWizardUILogic
 ::OnFilePageFileFormatChange()
 {
   // Activate the next button if there is a format selected
-  if(m_InFilePageFormat->value() > 0)
-    m_BtnFilePageNext->activate();
-  else 
-    m_BtnFilePageNext->deactivate();  
+  const std::string strFileName = m_InFilePageBrowser->value();
+  if(strFileName != "") {
+    if(m_InFilePageFormat->value() > 0)
+      m_BtnFilePageNext->activate();
+    else 
+      m_BtnFilePageNext->deactivate();
+  }
 }
 
-void 
+void
 MeshIOWizardUILogic
 ::OnFilePageBack()
 {

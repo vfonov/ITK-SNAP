@@ -20,20 +20,28 @@ PROJECT(SNAP)
 # for example, version 1.7.3-beta has major version 1, minor version 7, patch 3
 # and qualifier "-beta". Major, minor and patch must be numbers, but the qualifier
 # is an arbitrary string and may be blank. 
-# 
+#
 # Important:
 #   - The qualifier is just a descriptor. No two version should have the same 
 #     major/minor/patch and different qualifiers. So it's completely wrong to 
 #     release version 1.7.3-beta and then version 1.7.3. The right way to do it
 #     is to have 1.7.3-beta followed by 1.7.5-rc1 followed by 1.8.0 and so on
 SET(SNAP_VERSION_MAJOR 2)
-SET(SNAP_VERSION_MINOR 2)
-SET(SNAP_VERSION_PATCH 0)
+SET(SNAP_VERSION_MINOR 4) 
+SET(SNAP_VERSION_PATCH 2)
 SET(SNAP_VERSION_QUALIFIER "")
 SET(SNAP_VERSION_FULL "${SNAP_VERSION_MAJOR}.${SNAP_VERSION_MINOR}.${SNAP_VERSION_PATCH}${SNAP_VERSION_QUALIFIER}")
-SET(SNAP_VERSION_RELEASE_DATE "20110504")
+SET(SNAP_VERSION_RELEASE_DATE "20130826")
 SET(SNAP_VERSION_LAST_COMPATIBLE_RELEASE_DATE "20090731")
-SET(SNAP_VERSION_RELEASE_DATE_FORMATTED "May 4, 2011")
+SET(SNAP_VERSION_RELEASE_DATE_FORMATTED "Nov 21, 2012")
+
+# Get the current Git branch
+SET(CMAKE_MODULE_PATH ${SNAP_SOURCE_DIR}/CMake)
+include(GitBranch)
+get_git_branch(SNAP_VERSION_GIT_BRANCH)
+
+# Print the Git information
+MESSAGE(STATUS "   GIT Info: BRANCH ${SNAP_VERSION_GIT_BRANCH}")
 
 # Shamelessly stolen from ParaView
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME "itksnap-${SNAP_VERSION_FULL}-${SNAP_VERSION_RELEASE_DATE}")
@@ -53,8 +61,8 @@ ENDIF(${CPACK_SYSTEM_NAME} MATCHES Windows)
 
 # For Apple, we need to base the filename on the architecture
 IF(CMAKE_SYSTEM_NAME MATCHES Darwin)
-  STRING(REPLACE ";" "-" ARCHBIT ${CMAKE_OSX_ARCHITECTURES})
-  SET(CPACK_SYSTEM_NAME "MacOS-${ARCHBIT}")
+  STRING(REPLACE ';' "-" ARCH ${CMAKE_OSX_ARCHITECTURES})
+  SET(CPACK_SYSTEM_NAME "MacOS-${ARCH}")
 ENDIF(CMAKE_SYSTEM_NAME MATCHES Darwin)
 
 IF(NOT DEFINED CPACK_PACKAGE_FILE_NAME)
@@ -334,6 +342,24 @@ SET(UI_HEADERS
   UserInterface/Window3D/Window3D.h
 )
 
+IF(APPLE)
+    SET(MMFILE Utilities/FLTK/SNAP_Fl_Native_File_Chooser/SNAP_Fl_Native_File_Chooser_MAC.mm)
+ENDIF(APPLE)
+
+#SNAP_FLTK
+SET(SNAP_FLTK_CXX
+  #Utilities/FLTK/SNAP_Fl_Native_File_Chooser/SNAP_Fl_Native_File_Chooser_common.cxx
+  Utilities/FLTK/SNAP_Fl_Native_File_Chooser/SNAP_Fl_Native_File_Chooser.cxx
+  #Utilities/FLTK/SNAP_Fl_Native_File_Chooser/SNAP_Fl_Native_File_Chooser_FLTK.cxx
+  ${MMFILE}
+  #Utilities/FLTK/SNAP_Fl_Native_File_Chooser/SNAP_Fl_Native_File_Chooser_WIN32.cxx
+) 
+
+#SNAP_FLTK
+SET(SNAP_FLTK_HEADERS
+  Utilities/FLTK/SNAP_Fl_Native_File_Chooser/SNAP_Fl_Native_File_Chooser.H
+)
+
 # The source code for SNAP testing project
 SET(TESTING_CXX
   Testing/TestMain.cxx
@@ -431,6 +457,7 @@ ELSE( CMAKE_GENERATOR MATCHES "Visual Studio 6" )
     ${SNAP_SOURCE_DIR}/UserInterface/Window3D
     ${SNAP_BINARY_DIR}/UserInterface/ImageIOWizard
     ${SNAP_BINARY_DIR}/UserInterface/MainComponents
+	${SNAP_SOURCE_DIR}/Utilities/FLTK/SNAP_Fl_Native_File_Chooser
     ${FLTK_INCLUDE_PATH}
     ${OPENGL_INCLUDE_PATH}
   )
@@ -438,9 +465,13 @@ ELSE( CMAKE_GENERATOR MATCHES "Visual Studio 6" )
 ENDIF( CMAKE_GENERATOR MATCHES "Visual Studio 6" )
 
 # Get rid of this ridiculous warning in VS8
-IF( CMAKE_GENERATOR MATCHES "Visual Studio 8" OR CMAKE_GENERATOR MATCHES "Visual Studio 9")
+IF( CMAKE_GENERATOR MATCHES "Visual Studio 8" OR CMAKE_GENERATOR MATCHES "Visual Studio 9" OR CMAKE_GENERATOR MATCHES "Visual Studio 10" )
   ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
-ENDIF( CMAKE_GENERATOR MATCHES "Visual Studio 8" OR CMAKE_GENERATOR MATCHES "Visual Studio 9")
+ENDIF( CMAKE_GENERATOR MATCHES "Visual Studio 8" OR CMAKE_GENERATOR MATCHES "Visual Studio 9" OR CMAKE_GENERATOR MATCHES "Visual Studio 10" )
+
+IF( CMAKE_GENERATOR MATCHES "^NMake" OR CMAKE_GENERATOR MATCHES "^Visual Studio" )
+  ADD_DEFINITIONS(-DNOMINMAX)
+ENDIF( CMAKE_GENERATOR MATCHES "^NMake" OR CMAKE_GENERATOR MATCHES "^Visual Studio" )
   
 # ----------------------------------------------------------------
 # Define External Libraries
@@ -448,7 +479,7 @@ ENDIF( CMAKE_GENERATOR MATCHES "Visual Studio 8" OR CMAKE_GENERATOR MATCHES "Vis
 
 # ITK Libraries
 SET(SNAP_ITK_LIBS
-  ITKIO
+  ${ITK_LIBRARIES}
 )
 
 # Core VTK libraries
@@ -527,6 +558,9 @@ ADD_LIBRARY(itksnaplogic ${LOGIC_CXX} ${LOGIC_HEADERS})
 # The user interface code library
 ADD_LIBRARY(itksnapui ${UI_CXX} ${UI_HEADERS} ${itksnapui_FLTK_UI_SRCS})
 
+# SNAP FLTK native file chooser
+ADD_LIBRARY(snap_fltk_native_file_chooser ${SNAP_FLTK_CXX} ${SNAP_FLTK_HEADERS})
+
 # This is experimental: it seems that shared libraries do not
 # build accurately (at least on MacOS) without the following
 # two lines
@@ -534,7 +568,7 @@ TARGET_LINK_LIBRARIES(itksnaplogic ${SNAP_EXTERNAL_LIBS})
 TARGET_LINK_LIBRARIES(itksnapui itksnaplogic ${SNAP_EXTERNAL_LIBS})
 
 # Designate the SNAP internal libraries
-SET(SNAP_INTERNAL_LIBS itksnapui itksnaplogic)
+SET(SNAP_INTERNAL_LIBS snap_fltk_native_file_chooser itksnapui itksnaplogic)
 
 # *****************************************************
 # Define SNAP Executables
@@ -616,7 +650,7 @@ ENDIF(UNIX AND NOT APPLE)
 INSTALL(DIRECTORY ${SNAP_BINARY_DIR}/ProgramData DESTINATION ${SNAP_DATA_INSTALL_DIR})
 
 # On Win32, we must include the redistributable
-IF(MSVC80 OR MSVC90)
+IF(MSVC80 OR MSVC90 OR MSVC10)
   FIND_PROGRAM(VCREDIST_EXE vcredist_x86.exe vcredist_x64.exe)
   IF(VCREDIST_EXE)
     GET_FILENAME_COMPONENT(VCREDIST_NAME ${VCREDIST_EXE} NAME)
@@ -624,7 +658,7 @@ IF(MSVC80 OR MSVC90)
     SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS 
       "ExecWait '\\\"$INSTDIR\\\\bin\\\\${VCREDIST_NAME}\\\" /q:a'")
   ENDIF(VCREDIST_EXE)
-ENDIF(MSVC80 OR MSVC90)
+ENDIF(MSVC80 OR MSVC90 OR MSVC10)
 
 # Allow package generation
 SET(CPACK_PACKAGE_NAME "minc_itksnap")
@@ -645,7 +679,7 @@ IF(WIN32 AND NOT UNIX)
   # sure there is at least one set of four (4) backlasshes.
   SET(CPACK_GENERATOR "NSIS")
   SET(CPACK_NSIS_INSTALLED_ICON_NAME "InsightSNAP.exe")
-  SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} ITK-SNAP")
+  SET(CPACK_NSIS_DISPLAY_NAME "ITK-SNAP ${SNAP_VERSION_MAJOR}.${SNAP_VERSION_MINOR}")
   SET(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.itksnap.org")
   SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.itksnap.org/credits.php")
   SET(CPACK_NSIS_MODIFY_PATH OFF)
@@ -700,19 +734,21 @@ MARK_AS_ADVANCED(SCP_ARGUMENTS)
 SET(SCP_USERNAME "" CACHE STRING "SourceForge.net account id for uploads")
 MARK_AS_ADVANCED(SCP_USERNAME)
 
-SET(NIGHTLY_TARGET "itksnap-nightly-${CPACK_SYSTEM_NAME}.${CPACK_EXTENSION}")
+SET(NIGHTLY_TARGET "itksnap-nightly-${SNAP_VERSION_GIT_BRANCH}-${CPACK_SYSTEM_NAME}.${CPACK_EXTENSION}")
+SET(EXPERIMENTAL_TARGET "itksnap-experimental-${SNAP_VERSION_GIT_BRANCH}-${CPACK_SYSTEM_NAME}.${CPACK_EXTENSION}")
 
 SET(SCP_ROOT "frs.sourceforge.net:/home/frs/project/i/it/itk-snap/itk-snap")
 
 ADD_CUSTOM_TARGET(upload_nightly 
-  VERBATIM COMMAND "${SCP_PROGRAM}" ${SCP_ARGUMENTS} ${CPACK_TARGET_FILENAME} ${SCP_USERNAME},itk-snap@${SCP_ROOT}/Nightly/${NIGHTLY_TARGET}
+  VERBATIM COMMAND "${SCP_PROGRAM}" ${SCP_ARGUMENTS} 
+  ${CPACK_TARGET_FILENAME} ${SCP_USERNAME},itk-snap@${SCP_ROOT}/Nightly/${NIGHTLY_TARGET}
   DEPENDS ${CPACK_TARGET}
   WORKING_DIRECTORY ${SNAP_BINARY_DIR}
   COMMENT "Uploading package ${CPACK_TARGET} to SourceForge.net as ${NIGHTLY_TARGET}")
 
 ADD_CUSTOM_TARGET(upload_experimental 
-  VERBATIM COMMAND "${SCP_PROGRAM}" ${SCP_ARGUMENTS} ${CPACK_TARGET_FILENAME} ${SCP_USERNAME},itk-snap@${SCP_ROOT}/Experimental
+  VERBATIM COMMAND "${SCP_PROGRAM}" ${SCP_ARGUMENTS} 
+  ${CPACK_TARGET_FILENAME} ${SCP_USERNAME},itk-snap@${SCP_ROOT}/Experimental/${EXPERIMENTAL_TARGET}
   DEPENDS ${CPACK_TARGET}
   WORKING_DIRECTORY ${SNAP_BINARY_DIR}
-  COMMENT "Uploading package ${CPACK_TARGET} to SourceForge.net to Experimental directory")
-
+  COMMENT "Uploading package ${CPACK_TARGET} to SourceForge.net as ${EXPERIMENTAL_TARGET}")

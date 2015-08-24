@@ -32,6 +32,7 @@
   PURPOSE.  See the above copyright notices for more information. 
 
 =========================================================================*/
+#include "ImageWrapper.h"
 #include "ImageWrapper.txx"
 #include "ScalarImageWrapper.txx"
 #include "LabelImageWrapper.h"
@@ -114,41 +115,3 @@ LabelImageWrapper
   return m_RGBAFilter[dim]->GetOutput();
 }
 
-/**
- * This definition is needed to use RGBA pixels for compilation
- */
-typedef itk::RGBAPixel<unsigned char> ColorPixel;
-
-namespace itk {
-
-template<>
-class NumericTraits<ColorPixel>
-{
-public:
-  typedef ColorPixel ValueType;
-  typedef ColorPixel PrintType;
-  typedef ColorPixel AbsType;
-  typedef ColorPixel AccumulateType;
-  static const ColorPixel Zero;
-  static const ColorPixel One;
-
-  static ColorPixel NonpositiveMin() { return Zero; }
-  static bool IsPositive(ColorPixel val) { return true; }
-  static bool IsNonpositive(ColorPixel val) { return false; }
-  static bool IsNegative(ColorPixel val) { return false; }
-  static bool IsNonnegative(ColorPixel val) {return true; }
-private:
-
-  static const unsigned char ZeroArray[4];
-  static const unsigned char OneArray[4];
-};
-
-} // End of namespace
-
-const unsigned char itk::NumericTraits<ColorPixel>::ZeroArray[4] = {0,0,0,0};
-const ColorPixel itk::NumericTraits<ColorPixel>::Zero = 
-  ColorPixel(itk::NumericTraits<ColorPixel>::ZeroArray);
-
-const unsigned char itk::NumericTraits<ColorPixel>::OneArray[4] = {1,1,1,1};
-const ColorPixel itk::NumericTraits<ColorPixel>::One = 
-  ColorPixel(itk::NumericTraits<ColorPixel>::OneArray);

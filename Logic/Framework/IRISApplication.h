@@ -41,7 +41,7 @@
 #include "SystemInterface.h"
 #include "UndoDataManager.h"
 
-// #include "itkImage.h"
+//#include "itkImage.h"
 
 // Forward reference to the classes pointed at
 class GenericImageData;
@@ -49,8 +49,9 @@ class IRISImageData;
 class SNAPImageData;
 class MeshExportSettings;
 class GuidedNativeImageIO;
+class IRISException;
 namespace itk {
-  template <class TPixel, unsigned int VDimension> class OrientedImage;
+    template <class TPixel, unsigned int VDimension> class Image;
 }
 
 /**
@@ -76,10 +77,10 @@ public:
   // Typedefs
   typedef itk::ImageRegion<3> RegionType;
   typedef itk::Size<3> SizeType;
-  typedef itk::OrientedImage<GreyType,3> GreyImageType;
-  typedef itk::OrientedImage<RGBType,3> RGBImageType;
-  typedef itk::OrientedImage<LabelType,3> LabelImageType;
-  typedef itk::OrientedImage<float,3> SpeedImageType;
+  typedef itk::Image<GreyType,3> GreyImageType;
+  typedef itk::Image<RGBType,3> RGBImageType;
+  typedef itk::Image<LabelType,3> LabelImageType;
+  typedef itk::Image<float,3> SpeedImageType;
   typedef itk::Command CommandType;
   typedef UndoDataManager<LabelType> UndoManagerType;
 
@@ -237,9 +238,9 @@ public:
    * MeshExportSettings structure.
    */
   void ExportSegmentationMesh(const MeshExportSettings &sets, itk::Command *cmd)
-    throw(itk::ExceptionObject);
+    throw(itk::ExceptionObject, IRISException);
 
-  /** 
+  /**
    * This method is used to selectively override labels in a target 
    * segmentation image with the current drawing color.  It uses the 
    * current coverage mode to determine whether to override the pixel 

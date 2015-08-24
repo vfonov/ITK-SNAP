@@ -37,7 +37,7 @@
 #include "SNAPCommon.h"
 #include "SNAPRegistryIO.h"
 #include "ImageCoordinateGeometry.h"
-#include "itkOrientedImage.h"
+#include "itkImage.h"
 
 #include "itkImageIOBase.h"
 #include "itkAnalyzeImageIO.h"
@@ -58,6 +58,7 @@
 #include "itkImageIOFactory.h"
 #include "itkGDCMSeriesFileNames.h"
 #include "itkImageToVectorImageFilter.h"
+#include "itkMRCImageIO.h"
 
 #include "itkMinimumMaximumImageCalculator.h"
 #include "itkShiftScaleImageFilter.h"
@@ -99,6 +100,7 @@ GuidedNativeImageIO
 #ifdef USE_EZMINC
   {"MINC", "mnc,mnc.gz",             true,  true,  true,  true},
 #endif
+  {"MRC", "mrc",                     true,  true,  true,  true},
   {"INVALID FORMAT", "",             false, false, false, false}};
 
 GuidedNativeImageIO
@@ -256,7 +258,13 @@ GuidedNativeImageIO
         }
       }
       break;
-    default:
+	case FORMAT_MRC:
+	  {
+	  m_IOBase = itk::MRCImageIO::New();
+	  scaleSpacingAndOrigin(0.0000001, m_IOBase); //i.e. 10^(-7)
+	  break;
+	  }
+	default:
       {
       // No IO base was specified in the registry folder. We will use ITK's factory
       // system to find an IO object that can open the file
@@ -322,6 +330,11 @@ GuidedNativeImageIO
     m_IOBase->ReadImageInformation();
     }
 
+  if(m_FileFormat == FORMAT_MRC)
+    {
+	scaleSpacingAndOrigin(0.0000001, m_IOBase); //i.e. 10^(-7)
+    }
+
   // Based on the component type, read image in native mode
   switch(m_IOBase->GetComponentType()) 
     {
@@ -361,7 +374,7 @@ GuidedNativeImageIO
   if(m_FileFormat == FORMAT_DICOM && m_DICOMFiles.size() > 1)
     {
     // It seems that ITK can't yet read DICOM into a VectorImage. 
-    typedef itk::OrientedImage<TScalar, 3> GreyImageType;
+    typedef itk::Image<TScalar, 3> GreyImageType;
 
     // Create an image series reader 
     typedef itk::ImageSeriesReader<GreyImageType> ReaderType;
@@ -505,6 +518,16 @@ void
 GuidedNativeImageIO
 ::SaveImage(const char *FileName, Registry &folder, itk::Image<TPixel,3> *image)
 {
+  //Octavian: This is a patch introduced to check if we can write to target files.
+  //This patch covers the NIFTI writer in ITK, which does not throw an exception when saving
+  //to a file where we do not have permissions.
+  FILE * fp;
+  if((fp = fopen(FileName, "wb")) == 0)
+    {
+    throw IRISException("The file target cannot be written.");
+    }
+  fclose(fp);
+  
   // Create an Image IO based on the folder
   CreateImageIO(FileName, folder, false);
 
@@ -577,14 +600,48 @@ GuidedNativeImageIO
   if(m_IOBase)
     writer->SetImageIO(m_IOBase);
   writer->SetInput(image);
+  if(m_FileFormat == FORMAT_MRC)
+    {
+	scaleSpacingAndOrigin(10000000, m_IOBase); //i.e. 10^7
+	scaleSpacingAndOrigin(10000000, image); //i.e. 10^7
+    }
   writer->Update();
+  if(m_FileFormat == FORMAT_MRC)
+    {
+    scaleSpacingAndOrigin(0.0000001, m_IOBase); //i.e. 10^(-7)
+	scaleSpacingAndOrigin(0.0000001, image); //i.e. 10^(-7)
+    }
 }
 
+void GuidedNativeImageIO::scaleSpacingAndOrigin(double adbFactor,  GuidedNativeImageIO::IOBasePointer ioBasePointer)
+{
 
+  int nI;
+  for(nI = 0; nI < 3; nI++)
+	{
+    double dbSpacing = ioBasePointer->GetSpacing(nI);
+	m_IOBase->SetSpacing(nI, dbSpacing * adbFactor);
+	double dbOrigin = ioBasePointer->GetOrigin(nI);
+	m_IOBase->SetOrigin(nI, dbOrigin * adbFactor);
+    }
+  
+}
 
-
-
-
+template<typename TPixel>
+void GuidedNativeImageIO::scaleSpacingAndOrigin(double adbFactor, itk::Image<TPixel,3> *image)
+{
+  typename itk::Image<TPixel,3>::SpacingType spacing = image->GetSpacing();
+  typename itk::Image<TPixel,3>::PointType origin = image->GetOrigin();
+  int nI;
+  for(nI = 0; nI < 3; nI++)
+	{
+    spacing[nI] *= adbFactor;
+	origin[nI] *= adbFactor;
+	
+    }
+  image->SetSpacing(spacing);
+  image->SetOrigin(origin);
+}
 
 /*****************************************************************************
  * ADAPTER OBJECTS TO CAST NATIVE IMAGE TO GIVEN IMAGE
@@ -937,4 +994,3 @@ template void GuidedNativeImageIO::SaveImage(const char *, Registry &, itk::Imag
 template void GuidedNativeImageIO::SaveImage(const char *, Registry &, itk::Image<LabelType,3> *);
 template void GuidedNativeImageIO::SaveImage(const char *, Registry &, itk::Image<float,3> *);
 template void GuidedNativeImageIO::SaveImage(const char *, Registry &, itk::Image<RGBType,3> *);
-

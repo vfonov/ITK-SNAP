@@ -39,20 +39,20 @@
 #endif
 
 #include "FL/Fl.H"
-#include "FL/Fl_Native_File_Chooser.H"
+#include "SNAP_Fl_Native_File_Chooser.H"
 #include <FL/Fl_File_Chooser.H>
 
 #include "CommandLineArgumentParser.h"
 #include "ImageCoordinateGeometry.h"
 #include "ImageIORoutines.h"
-#include "IRISApplication.h"
 #include "IRISException.h"
+#include "IRISApplication.h"
 #include "IRISImageData.h"
 #include "SNAPRegistryIO.h"
 #include "SystemInterface.h"
 #include "UserInterfaceLogic.h"
 
-#include "itkOrientedImage.h"
+#include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkNumericTraits.h"
 
@@ -79,7 +79,7 @@ const GreyType MINGREYVAL = itk::NumericTraits<GreyType>::min();
 // A templated load image method
 template<class TPixel>
 bool LoadImageFromFileInteractive(
-  const char *file, typename itk::SmartPointer< itk::OrientedImage<TPixel,3> > &target)
+  const char *file, typename itk::SmartPointer< itk::Image<TPixel,3> > &target)
 {
   try
     {
@@ -133,8 +133,8 @@ bool FindDataDirectoryInteractive(const char *sExePath, SystemInterface &system)
       string sTitle = "Find a directory that contains file " + sMissingFile;
 
       // Look for the file using a file chooser
-      Fl_Native_File_Chooser fc;
-      fc.type(Fl_Native_File_Chooser::BROWSE_FILE);
+      SNAP_Fl_Native_File_Chooser fc;
+      fc.type(SNAP_Fl_Native_File_Chooser::BROWSE_FILE);
       fc.title(sTitle.c_str());
       fc.filter("Directory Token File\t*.txt");
       fc.preset_file(sMissingFile.c_str());
@@ -463,17 +463,25 @@ int main(int argc, char **argv)
 
       // Try to load the image
       try
-        {
-        ui->NonInteractiveLoadOverlayImage(fname, false, false);
-        }
-      catch(itk::ExceptionObject &exc)
-        {
-        cerr << "Error loading file '" << fname << "'" << endl;
-        cerr << "Reason: " << exc << endl;
-        return -1;
-        }
-      }
-    }
+	    {
+		ui->NonInteractiveLoadOverlayImage(fname, false, false);
+	    }
+	  catch(itk::ExceptionObject &exc)
+	    {
+		cerr << "Error loading file '" << fname << "'" << endl;
+		cerr << "Reason: " << exc << endl;
+		return -1;
+	    }
+	  //Octavian_2012_08_24_16:20: added exception as a response to: 
+	  //bug: ID: 3023489: "-o flag size check"
+	  catch(IRISException & IRISexc)
+	    {
+		cerr << "Error loading file '" << fname << "'" << endl;
+		cerr << "Reason: " << IRISexc << endl;
+		return -1;
+	    }
+	}
+  }
 
   // Load labels if supplied
   if(parseResult.IsOptionPresent("--labels"))

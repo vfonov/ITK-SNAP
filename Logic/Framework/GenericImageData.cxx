@@ -33,7 +33,7 @@
 
 =========================================================================*/
 // ITK Includes
-#include "itkOrientedImage.h"
+#include "itkImage.h"
 #include "itkImageIterator.h"
 #include "itkImageRegionIterator.h"
 #include "itkImageRegionConstIterator.h"
@@ -43,6 +43,7 @@
 #include "UnaryFunctorCache.h"
 #include "itkRGBAPixel.h"
 #include "IRISSlicer.h"
+#include "IRISException.h"
 #include "IRISApplication.h"
 #include <list>
 
@@ -193,8 +194,12 @@ GenericImageData
                  const GreyTypeToNativeFunctor &native)
 {
   // Check that the image matches the size of the main image
-  assert(m_MainImageWrapper->GetBufferedRegion() ==
-         newGreyImage->GetBufferedRegion());
+  //Octavian_2012_08_24_16:20: changed assert into this test as a response to:
+  //bug: ID: 3023489: "-o flag size check" 
+  if(m_MainImageWrapper->GetBufferedRegion() !=
+	  newGreyImage->GetBufferedRegion()) {
+	throw IRISException("Main and overlay data sizes are different");
+  }
 
   // Pass the image to a Grey image wrapper
   GreyImageWrapper *newGreyOverlayWrapper = new GreyImageWrapper;
@@ -211,8 +216,12 @@ GenericImageData
 ::SetRGBOverlay(RGBImageType *newRGBImage)
 {
   // Check that the image matches the size of the main image
-  assert(m_MainImageWrapper->GetBufferedRegion() ==
-         newRGBImage->GetBufferedRegion());
+  //Octavian_2012_08_24_16:20: changed assert into this test as a response to:
+  //bug: ID: 3023489: "-o flag size check" 
+  if(m_MainImageWrapper->GetBufferedRegion() !=
+	  newRGBImage->GetBufferedRegion()) {
+		throw IRISException("Main and overlay data sizes are different");
+  }
 
   // Pass the image to a RGB image wrapper
   RGBImageWrapper *newRGBOverlayWrapper = new RGBImageWrapper;
@@ -346,6 +355,10 @@ GenericImageData
 {
   SetImageGeometry(m_MainWrappers, geometry);
   SetImageGeometry(m_OverlayWrappers, geometry);
+
+  WrapperList temp;
+  temp.push_back(&m_LabelWrapper);
+  SetImageGeometry(temp, geometry);
 }
 
 void
@@ -363,7 +376,7 @@ GenericImageData
     if(wrapper->IsInitialized())
       {
       // Set the direction matrix in the image
-      wrapper->GetImageBase()->SetDirection(
+      wrapper->SetDirectionCosineMatrix(
         itk::Matrix<double,3,3>(geometry.GetImageDirectionCosineMatrix()));
 
       // Update the geometry for each slice

@@ -58,6 +58,7 @@
 #include "RGBImageWrapper.h"
 #include "EdgePreprocessingImageFilter.h"
 #include "LayerInspectorUILogic.h"
+#include "IRISException.h"
 #include "IRISApplication.h"
 #include "IRISImageData.h"
 #include "IRISVectorTypesToITKConversion.h"
@@ -71,6 +72,7 @@
 #include "IRISSliceWindow.h"
 #include "SNAPSliceWindow.h"
 #include "Window3D.h"
+#include "IRISException.h"
 
 
 // Additional UI component inludes
@@ -1598,6 +1600,9 @@ UserInterfaceLogic
 
   // Activate/deactivate menu items
   // TODO: build a better state machine
+    
+  m_Activation->UpdateFlag(UIF_SNAP_PREPROCESSING_DONE, false);  
+    
   if(m_Activation->GetFlag(UIF_GRAY_LOADED))
     m_Activation->UpdateFlag(UIF_IRIS_WITH_GRAY_LOADED, true);
   else
@@ -2001,28 +2006,49 @@ UserInterfaceLogic
     throw IRISException("Incorrect display layout");
 
   // Handle full-screen toggle
-  if(m_DisplayLayout.full_screen && !dl.full_screen)
+  if(m_DisplayLayout.full_screen != dl.full_screen)
     {
-    if(m_DisplayLayout.size == FULL_SIZE)
+    if(!dl.full_screen)
       {
-      m_WinMain->fullscreen_off(x,y,w,h);
+      if(m_DisplayLayout.size == FULL_SIZE)
+        {
+        m_WinMain->fullscreen_off(x,y,w,h);
+        }
+      else
+        {
+        m_WinMain->fullscreen_off(x,y,w / 2, h / 2);
+        }
+      m_FullScreen = false;
       }
-    else
-      {
-      m_WinMain->fullscreen_off(x,y,w / 2, h / 2);
-      }
-    m_FullScreen = false;
-    }
 
-  else if(!m_DisplayLayout.full_screen && dl.full_screen)
-    {
-    if(m_DisplayLayout.size == FULL_SIZE)
+    else 
       {
-      w = m_WinMain->w(); h = m_WinMain->h();
-      x = m_WinMain->x(); y = m_WinMain->y();
+      if(m_DisplayLayout.size == FULL_SIZE)
+        {
+        w = m_WinMain->w(); h = m_WinMain->h();
+        x = m_WinMain->x(); y = m_WinMain->y();
+        }
+      m_WinMain->fullscreen();
+      m_WinMain->override();
+
+      m_FullScreen = true;
       }
-    m_WinMain->fullscreen();
-    m_FullScreen = true;
+
+    // Cause a redraw of GL windows
+    for(unsigned int j = 0; j < 4; j++)
+      {
+      if(dl.slice_config == FOUR_SLICE || dl.slice_config == AXIAL+j)
+        m_SliceWindow[j]->show();
+      }
+
+    // Cause textures to be reset
+    for (unsigned int i=0; i<3; i++) 
+      {
+      if(m_GlobalState->GetSNAPActive())
+        m_SNAPWindowManager2D[i]->InitializeSlice(m_Driver->GetCurrentImageData());
+      else
+        m_IRISWindowManager2D[i]->InitializeSlice(m_Driver->GetCurrentImageData());
+      }
     }
 
   // Handle window size selection
@@ -2230,6 +2256,20 @@ void
 SNAPMainWindow
 ::resize(int x, int y, int w, int h)
 {
+  // Handle the shrinking of the window below the minimum size of the 
+  // left hand panel. In this case we make the whole thing squeezable
+  Fl_Group *rightpane = m_ParentUI->m_GrpRightPanePlaceholderNormal;
+  Fl_Group *leftpane = m_ParentUI->m_GrpControls;
+
+  if(h < 735)
+    {
+    leftpane->resizable(leftpane);
+    }
+  else
+    {
+    leftpane->resizable(NULL);
+    }
+
   // Call parent class
   Fl_Double_Window::resize(x,y,w,h);
 
@@ -2701,18 +2741,43 @@ UserInterfaceLogic
   // Add the idle event handler
   Fl::add_timeout(0.03, &UserInterfaceLogic::GlobalIdleHandler);
 
-  // Make sure the window is visible
-  m_WinMain->show();
+  // Before showing the main window, let's make sure it's not bigger than the
+  // available screen space
+  if(Fl::w() < m_WinMain->w() || Fl::h() < m_WinMain->h())
+    {
+    // Resize to fit the available screen space
+    int wopt = m_WinMain->w(), hopt = m_WinMain->h();
+    m_WinMain->size(
+      std::min(Fl::w()-100, wopt),
+      std::min(Fl::h()-100, hopt));
+    
+    // Make sure the window is visible
+    m_WinMain->show();
 
-  // Show all of the GL boxes
-  for(unsigned int i = 0; i < 4; i++)
-    m_SliceWindow[i]->show();
+    // Show all of the GL boxes
+    for(unsigned int i = 0; i < 4; i++)
+      m_SliceWindow[i]->show();
+
+    // Resize again to fit the available screen space
+    m_WinMain->size(
+      std::min(Fl::w(), wopt),
+      std::min(Fl::h(), hopt));
+    }
+  else
+    {
+    // Make sure the window is visible
+    m_WinMain->show();
+
+    // Show all of the GL boxes
+    for(unsigned int i = 0; i < 4; i++)
+      m_SliceWindow[i]->show();
+    }
 
   // Show the IRIS interface
 }
 
 void 
-UserInterfaceLogic
+  UserInterfaceLogic
 ::ShowIRIS()
 {
   // Show the right wizard page
@@ -3842,6 +3907,10 @@ UserInterfaceLogic
 
   // Fire zoom update event
   OnZoomUpdate();
+
+  // Tell the layer inspector to update itself because the RAI code that it shows
+  // may have changed
+  m_LayerUI->OnLayerSelectionUpdate();
 }
 
 void 
@@ -3873,6 +3942,9 @@ UserInterfaceLogic
 {
   // Update the mesh and redraw the window
   m_IRISWindowManager3D->UpdateMesh(m_ProgressCommand);
+
+  m_IRISWindowManager3D->ResetWorldMatrix();
+
   m_SliceWindow[3]->redraw();
 
   // This is a safeguard in case the progress events do not fire
@@ -4265,12 +4337,19 @@ UserInterfaceLogic
   // Warn if the image has been scaled
   GreyTypeToNativeFunctor native = 
     m_Driver->GetCurrentImageData()->GetGrey()->GetNativeMapping();
-  if(m_AppearanceSettings->GetFlagFloatingPointWarningByDefault() == 1 
+  if(m_AppearanceSettings->GetFlagFloatingPointWarningByDefault() 
     && (native.scale != 1.0 || native.shift != 0.0))
     {
     m_WinPrecisionWarning->show();
+
+    while (m_WinPrecisionWarning->shown()) 
+      Fl::wait();
+
     if(m_ChkPrecisionWarningDisable->value())
+      {
       m_AppearanceSettings->SetFlagFloatingPointWarningByDefault(false);
+      m_AppearanceSettings->SaveToRegistry(m_SystemInterface->Folder("UserInterface.AppearanceSettings"));
+      }
     }
 }
 
@@ -5377,8 +5456,15 @@ void UserInterfaceLogic
     // Get the save settings
     MeshExportSettings sets = m_WizMeshExport->GetExportSettings();
 
-    // Use the settings to save the mesh
-    m_Driver->ExportSegmentationMesh(sets, m_ProgressCommand);
+    try 
+      {
+      // Use the settings to save the mesh
+      m_Driver->ExportSegmentationMesh(sets, m_ProgressCommand);
+      }
+    catch(IRISException & IRISexc) 
+      {
+      fl_alert("%s", IRISexc.what());
+      }
 
     // Update the history
     m_SystemInterface->UpdateHistory("SegmentationMesh", sets.GetMeshFileName().c_str());
@@ -5389,7 +5475,7 @@ void
 UserInterfaceLogic
 ::OnMenuLoadAdvection()
 {
-  typedef itk::OrientedImage<float, 3> AdvectionImage;
+  typedef itk::Image<float, 3> AdvectionImage;
   AdvectionImage::Pointer imgAdvection[3];
   
   // Preprocessing image can only be loaded in SNAP mode

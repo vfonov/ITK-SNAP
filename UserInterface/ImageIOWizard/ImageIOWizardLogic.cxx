@@ -33,7 +33,7 @@
 
 =========================================================================*/
 #include "FL/Fl.H"
-#include "FL/Fl_Native_File_Chooser.H"
+#include "SNAP_Fl_Native_File_Chooser.H"
 #include "FL/filename.H"
 #include "FL/fl_ask.H"
 #include "FL/Fl_Text_Buffer.H"
@@ -45,7 +45,8 @@
 #include <sstream>
 
 #include "ImageIOWizardLogic.h"
-#include "itkOrientedImage.h"
+#include "IRISException.h"
+#include "itkImage.h"
 #include "itkImageIOBase.h"
 #include "itkIOCommon.h"
 #include "itkMetaDataObject.h"
@@ -241,6 +242,11 @@ ImageIOWizardLogic
 
   // Compete the pattern
   pattern = allImageFiles + pattern;
+
+  //Octavian_2012_08_30_18:25
+  //A patch was added in order to overcome fltk string related crash.
+  pattern += "\n";
+
   return pattern;
 }
 
@@ -303,8 +309,8 @@ void ImageIOWizardLogic
 
   // Configure a file dialog
   const char *fName = NULL;
-  Fl_Native_File_Chooser chooser;
-  chooser.type(Fl_Native_File_Chooser::BROWSE_FILE);
+  SNAP_Fl_Native_File_Chooser chooser;
+  chooser.type(SNAP_Fl_Native_File_Chooser::BROWSE_FILE);
   chooser.title("Load Image");
   chooser.preset_file(path);
   chooser.filter(pattern.c_str());
@@ -1082,10 +1088,10 @@ ImageIOWizardLogic
 
   // Create a file chooser
   const char *fName = NULL;
-  Fl_Native_File_Chooser chooser;
-  chooser.type(Fl_Native_File_Chooser::BROWSE_SAVE_FILE);
+  SNAP_Fl_Native_File_Chooser chooser;
+  chooser.type(SNAP_Fl_Native_File_Chooser::BROWSE_SAVE_FILE);
   chooser.title("Save Image As");
-  chooser.options(Fl_Native_File_Chooser::NEW_FOLDER);
+  chooser.options(SNAP_Fl_Native_File_Chooser::NEW_FOLDER);
   chooser.preset_file(path);
   chooser.filter(pattern.c_str());
   if (chooser.show() == 0)
@@ -1139,7 +1145,8 @@ ImageIOWizardLogic
     }
   catch(itk::ExceptionObject &exc)
     { fl_alert("Error saving file: %s",exc.GetDescription()); }
-  
+  catch(IRISException & IRISexc)
+    { fl_alert("Error saving file: %s",IRISexc.what()); }
   // Restore the cursor
   m_WinOutput->cursor(FL_CURSOR_DEFAULT,FL_FOREGROUND_COLOR, FL_BACKGROUND_COLOR);
 }
