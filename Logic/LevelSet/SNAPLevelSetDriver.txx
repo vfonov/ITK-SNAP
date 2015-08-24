@@ -82,7 +82,11 @@ public:
   itkTypeMacro(ParallelSparseFieldLevelSetImageFilterBugFix,
                itk::ParallelSparseFieldLevelSetImageFilter)
 
+#if ( ITK_VERSION_MAJOR > 3 ) 
   virtual typename Superclass::TimeStepType ThreadedCalculateChange(itk::ThreadIdType ThreadId)
+#else
+  virtual typename Superclass::TimeStepType ThreadedCalculateChange(int ThreadId)
+#endif
   {
     typename Superclass::TimeStepType ts = Superclass::ThreadedCalculateChange(ThreadId);
 

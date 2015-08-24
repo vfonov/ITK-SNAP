@@ -479,8 +479,11 @@ ENDIF( CMAKE_GENERATOR MATCHES "^NMake" OR CMAKE_GENERATOR MATCHES "^Visual Stud
 
 # ITK Libraries
 SET(SNAP_ITK_LIBS
+  ITKIOReview
   ${ITK_LIBRARIES}
 )
+
+message("SNAP_ITK_LIBS=${SNAP_ITK_LIBS}")
 
 # Core VTK libraries
 SET(SNAP_VTK_CORE_LIBS
@@ -520,7 +523,6 @@ SET(SNAP_EXTERNAL_LIBS
 ############################################
 # MINC integration                         #
 ############################################
-FIND_PACKAGE(MINC2 QUIET) 
 FIND_PACKAGE(LIBMINC QUIET)
 FIND_PACKAGE(MINC4ITK QUIET) 
 
